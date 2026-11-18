@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Applications — CampusFlow AI</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <div class="app-layout">
+    <div id="sidebar-container"></div>
+
+    <div class="main-content">
+      <div id="topbar-container"></div>
+
+      <main class="page-content">
+        <!-- Header -->
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:24px;">
+          <div>
+            <h1>My Applications</h1>
+            <p style="color:var(--text-secondary);font-size:.9rem;">
+              Complete history and digital status of all your submitted and drafted academic petitions.
+            </p>
+          </div>
+          <div>
+            <a href="/create-application.html" class="btn btn-primary">
+              ✏️ New Application
+            </a>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-body" style="padding:16px 20px;">
+            <div class="filter-bar">
+              <div class="form-group">
+                <label class="form-label" for="filter-status">Filter by Status</label>
+                <select id="filter-status" class="form-control">
+                  <option value="all">All Statuses</option>
+                  <option value="pending_review">Pending Review</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                  <option value="draft">Draft</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="filter-category">Filter by Category</label>
+                <select id="filter-category" class="form-control">
+                  <option value="all">All Categories</option>
+                  <option value="Leave Application">Leave Application</option>
+                  <option value="Attendance Consideration">Attendance Consideration</option>
+                  <option value="Event Permission">Event Permission</option>
+                  <option value="Academic Grievance">Academic Grievance</option>
+                  <option value="Fee-Related Request">Fee-Related Request</option>
+                  <option value="Examination-Related Request">Examination-Related Request</option>
+                  <option value="Timetable Change Request">Timetable Change Request</option>
+                  <option value="Classroom Infrastructure Request">Classroom Infrastructure Request</option>
+                  <option value="Scholarship-Related Request">Scholarship-Related Request</option>
+                  <option value="General Administrative Request">General Administrative Request</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div class="form-group" style="flex:1;min-width:200px;">
+                <label class="form-label" for="search-input">Search Keywords</label>
+                <input type="text" id="search-input" class="form-control" placeholder="Search by ID, subject, title...">
+              </div>
+
+              <button type="button" id="btn-reset-filters" class="btn btn-outline" style="align-self:flex-end;">
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Applications Table Card -->
+        <div class="card">
+          <div class="card-header">
+            <span id="results-count">Applications</span>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tracking ID</th>
+                    <th>Type</th>
+                    <th>Category</th>
+                    <th>Subject Line</th>
+                    <th>Addressed To</th>
+                    <th>Submitted Date</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="applications-body">
+                  <tr>
+                    <td colspan="8" style="text-align:center;padding:40px;">
+                      <div class="spinner"></div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await Auth.requireStudentPanel();
+      if (!user) return;
+
+      document.getElementById('sidebar-container').innerHTML = UI.buildStudentSidebar(user);
+      document.getElementById('topbar-container').innerHTML = UI.buildTopbar('My Applications');
+      UI.setupPage(user, 'my-applications');
+
+      const tbody = document.getElementById('applications-body');
+      const resultsCount = document.getElementById('results-count');
+      const filterStatus = document.getElementById('filter-status');
+      const filterCategory = document.getElementById('filter-category');
+      const searchInput = document.getElementById('search-input');
+      const resetBtn = document.getElementById('btn-reset-filters');
+
+      async function loadApplications() {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;"><div class="spinner"></div></td></tr>';
+
+        const params = new URLSearchParams();
+        if (filterStatus.value !== 'all') params.append('status', filterStatus.value);
+        if (filterCategory.value !== 'all') params.append('category', filterCategory.value);
+        if (searchInput.value.trim()) params.append('search', searchInput.value.trim());
+
+        try {
+          const res = await API.get(`/api/student/applications?${params.toString()}`);
+          if (res.success && res.applications) {
+            resultsCount.textContent = `Applications (${res.applications.length})`;
+
+            if (res.applications.length === 0) {
+              tbody.innerHTML = `
+                <tr>
+                  <td colspan="8">
+                    <div class="empty-state">
+                      <div class="empty-icon">🔍</div>
+                      <div class="empty-title">No matching applications found</div>
+                      <div class="empty-desc">Try clearing your search query or filters.</div>
+                    </div>
+                  </td>
+                </tr>
+              `;
+              return;
+            }
+
+            tbody.innerHTML = res.applications.map(app => `
+              <tr>
+                <td>
+                  <a href="/application-details.html?id=${app.application_id}" class="table-link" style="font-weight:700;">
+                    ${app.application_id}
+                  </a>
+                </td>
+                <td>
+                  ${app.application_type === 'collective'
+                    ? '<span class="badge badge-collective">Class</span>'
+                    : '<span class="badge badge-individual">Individual</span>'}
+                </td>
+                <td>${UI.escapeHtml(app.category)}</td>
+                <td>
+                  <div style="font-weight:600;max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                    ${UI.escapeHtml(app.subject)}
+                  </div>
+                </td>
+                <td>
+                  <div style="font-weight:500;">${UI.escapeHtml(app.recipient_designation || app.recipient_role.toUpperCase())}</div>
+                  ${app.recipient_name ? `<div style="font-size:.72rem;color:var(--text-muted);">${UI.escapeHtml(app.recipient_name)}</div>` : ''}
+                </td>
+                <td>${UI.formatDate(app.submitted_at || app.created_at)}</td>
+                <td>${UI.formatStatus(app.status)}</td>
+                <td>
+                  <a href="/application-details.html?id=${app.application_id}" class="btn btn-sm btn-outline">
+                    Track →
+                  </a>
+                </td>
+              </tr>
+            `).join('');
+          }
+        } catch (err) {
+          console.error('Failed to load applications', err);
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--danger);padding:20px;">Failed to load applications.</td></tr>';
+        }
+      }
+
+      filterStatus.addEventListener('change', loadApplications);
+      filterCategory.addEventListener('change', loadApplications);
+      let debounceTimer;
+      searchInput.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(loadApplications, 300);
+      });
+
+      resetBtn.addEventListener('click', () => {
+        filterStatus.value = 'all';
+        filterCategory.value = 'all';
+        searchInput.value = '';
+        loadApplications();
+      });
+
+      // Initial load
+      loadApplications();
+    });
+  </script>
+</body>
+</html>

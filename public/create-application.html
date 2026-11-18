@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Application — CampusFlow AI</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <div class="app-layout">
+    <div id="sidebar-container"></div>
+
+    <div class="main-content">
+      <div id="topbar-container"></div>
+
+      <main class="page-content" style="max-width:1100px;">
+        <!-- Header -->
+        <div style="margin-bottom:24px;">
+          <h1>New Academic Application</h1>
+          <p style="color:var(--text-secondary);font-size:.9rem;">
+            Draft and submit your official petition digitally to college authorities. Write manually or use the AI assistant.
+          </p>
+        </div>
+
+        <!-- Verification Banner (if pending) -->
+        <div id="lock-banner" style="display:none;" class="alert alert-warning"></div>
+
+        <!-- Application Mode Tabs -->
+        <div class="tabs">
+          <div class="tab active" data-tab="tab-ai">🤖 AI-Assisted Writing</div>
+          <div class="tab" data-tab="tab-manual">✍️ Manual Document Editor</div>
+        </div>
+
+        <form id="application-form">
+
+          <!-- SECTION 1: APPLICATION TYPE & RECIPIENT HIERARCHY -->
+          <div class="card" style="margin-bottom:20px;">
+            <div class="card-header">
+              <span>1. Application Scope & Routing Authority</span>
+            </div>
+            <div class="card-body">
+              <!-- Type selector (shown only for CR) -->
+              <div id="cr-mode-selector" style="display:none;margin-bottom:18px;background:var(--border-light);padding:14px;border-radius:var(--radius-sm);">
+                <label class="form-label">Application Type</label>
+                <div style="display:flex;gap:20px;">
+                  <label class="form-check">
+                    <input type="radio" name="applicationType" value="individual" checked>
+                    <span><strong>Individual Student Application</strong> (Submitted for myself)</span>
+                  </label>
+                  <label class="form-check">
+                    <input type="radio" name="applicationType" value="collective">
+                    <span><strong>Collective Class Application</strong> (On behalf of my batch)</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Collective fields (conditionally visible) -->
+              <div id="collective-fields" style="display:none;margin-bottom:18px;background:#e8eaf6;padding:16px;border-radius:var(--radius-sm);border:1px solid #c5cae9;">
+                <h4 style="color:var(--primary);margin-bottom:10px;font-size:.9rem;">Collective Class Representation Details</h4>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="className">Class / Batch Title</label>
+                    <input type="text" id="className" class="form-control" placeholder="e.g. B.Tech CSE - 4th Sem (Sec A)">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="studentsCount">Number of Students Represented</label>
+                    <input type="number" id="studentsCount" class="form-control" value="64" min="2" max="500">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Category & Language -->
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="category">Application Category <span class="required">*</span></label>
+                  <select id="category" class="form-control" required>
+                    <option value="Leave Application">1. Leave Application</option>
+                    <option value="Attendance Consideration">2. Attendance Consideration</option>
+                    <option value="Event Permission">3. Event Permission</option>
+                    <option value="Academic Grievance">4. Academic Grievance</option>
+                    <option value="Fee-Related Request">5. Fee-Related Request</option>
+                    <option value="Examination-Related Request">6. Examination-Related Request</option>
+                    <option value="Timetable Change Request">7. Timetable Change Request</option>
+                    <option value="Classroom Infrastructure Request">8. Classroom Infrastructure Request</option>
+                    <option value="Scholarship-Related Request">9. Scholarship-Related Request</option>
+                    <option value="General Administrative Request">10. General Administrative Request</option>
+                    <option value="Other">11. Other</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="language">Application Language</label>
+                  <select id="language" class="form-control">
+                    <option value="en">English (Official Institutional)</option>
+                    <option value="hi">Hindi (राजभाषा / हिंदी)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Authorized Recipient Selection -->
+              <div class="form-group" style="margin-top:10px;">
+                <label class="form-label">
+                  Recipient Authority (Hierarchy Enforced) <span class="required">*</span>
+                </label>
+                <div id="recipients-container" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:12px;margin-top:8px;">
+                  <div class="spinner"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 2: APPLICATION CONTENT -->
+          <div class="card" style="margin-bottom:20px;">
+            <div class="card-header">
+              <span>2. Application Composition</span>
+            </div>
+            <div class="card-body">
+
+              <!-- AI ASSISTED MODE TAB -->
+              <div id="tab-ai-content" class="tab-content active">
+                <div style="background:#eef2ff;border:1px solid #c7d2fe;padding:16px;border-radius:var(--radius-sm);margin-bottom:18px;">
+                  <h4 style="color:var(--primary);margin-bottom:6px;">🤖 Gemini Academic Writing Assistant</h4>
+                  <p style="font-size:.82rem;color:var(--text-secondary);margin-bottom:12px;">
+                    Provide a brief, plain-language description of your requirement. The AI will structure it with formal salutations, academic phrasing, and appropriate sign-off.
+                  </p>
+
+                  <div class="form-group" style="margin-bottom:10px;">
+                    <textarea id="ai-prompt" class="form-control" style="min-height:90px;" placeholder="Example: I need 3 days of medical leave from 20 to 22 November because I have severe viral fever. Doctor advised rest."></textarea>
+                  </div>
+
+                  <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                    <button type="button" id="btn-ai-generate" class="btn btn-primary btn-sm">
+                      ✨ Generate Formal Application
+                    </button>
+                    <button type="button" id="btn-ai-improve" class="btn btn-outline btn-sm">
+                      🌟 Polish Tone & Grammar
+                    </button>
+                    <button type="button" id="btn-ai-shorten" class="btn btn-outline btn-sm">
+                      ✂️ Make Shorter & Direct
+                    </button>
+                    <button type="button" id="btn-ai-trans-hi" class="btn btn-outline btn-sm">
+                      🌐 Translate to Hindi (हिंदी)
+                    </button>
+                    <button type="button" id="btn-ai-trans-en" class="btn btn-outline btn-sm">
+                      🌐 Translate to English
+                    </button>
+                  </div>
+                  <div id="ai-loading" style="display:none;margin-top:10px;font-size:.82rem;color:var(--primary);align-items:center;gap:8px;">
+                    <div class="spinner" style="width:16px;height:16px;border-width:2px;margin:0;"></div>
+                    <span>Drafting application with academic styling...</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SUBJECT & BODY (USED BY BOTH MODES) -->
+              <div class="form-group">
+                <label class="form-label" for="subject">Official Subject Line <span class="required">*</span></label>
+                <input type="text" id="subject" class="form-control" placeholder="e.g. Application for Grant of 3 Days Medical Leave" required>
+              </div>
+
+              <div class="form-group">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                  <label class="form-label" for="body" style="margin-bottom:0;">
+                    Formal Application Body <span class="required">*</span>
+                  </label>
+                  <span id="ai-source-badge" style="display:none;" class="badge badge-info"></span>
+                </div>
+                <textarea id="body" class="form-control editor-area" required placeholder="Respected Sir/Madam,&#10;&#10;I am writing this application to respectfully inform you that..."></textarea>
+                <div class="form-hint">Tip: Ensure all placeholders (like specific dates or reason details) are filled before submitting.</div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="supportingDetails">Supporting Details / Remarks (Optional)</label>
+                <input type="text" id="supportingDetails" class="form-control" placeholder="e.g. Prescription copy attached; missed midterm test on 16th Nov.">
+              </div>
+
+              <!-- Attachments -->
+              <div class="form-group">
+                <label class="form-label">Supporting Documents & Attachments (Optional)</label>
+                <div class="file-upload" id="file-drop-area">
+                  <div class="upload-icon">📎</div>
+                  <div class="upload-text"><strong>Click to browse</strong> or drag & drop supporting files</div>
+                  <div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">
+                    Supported: PDF, JPG, PNG, DOC, DOCX (Max 5 files, 10MB each)
+                  </div>
+                  <input type="file" id="file-input" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="display:none;">
+                </div>
+                <div class="file-list" id="file-list"></div>
+              </div>
+
+            </div>
+
+            <div class="card-footer" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+              <div>
+                <button type="button" id="btn-preview-doc" class="btn btn-outline">
+                  📄 A4 Document Preview
+                </button>
+              </div>
+              <div style="display:flex;gap:10px;">
+                <button type="button" id="btn-save-draft" class="btn btn-outline">
+                  💾 Save Draft
+                </button>
+                <button type="submit" id="btn-submit-app" class="btn btn-primary btn-lg">
+                  🚀 Submit Application
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+
+        <!-- A4 Document Preview Modal -->
+        <div class="modal-overlay" id="preview-modal">
+          <div class="modal" style="max-width:850px;">
+            <div class="modal-header">
+              <span>Official Institutional Document Preview (A4 Format)</span>
+              <button class="modal-close" id="preview-close">&times;</button>
+            </div>
+            <div class="modal-body" style="background:#f1f5f9;padding:24px;">
+              <div class="a4-preview" id="a4-document-content">
+                <!-- Preview injected here -->
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline" id="btn-print-preview">🖨️ Print / Save as PDF</button>
+              <button type="button" class="btn btn-primary" id="preview-ok">Back to Editor</button>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 1. Auth & Verification Check
+      const user = await Auth.requireStudentPanel();
+      if (!user) return;
+
+      document.getElementById('sidebar-container').innerHTML = UI.buildStudentSidebar(user);
+      document.getElementById('topbar-container').innerHTML = UI.buildTopbar('Create Application');
+      UI.setupPage(user, 'create-application');
+
+      // Check verification
+      const lockBanner = document.getElementById('lock-banner');
+      const submitBtn = document.getElementById('btn-submit-app');
+      const draftBtn = document.getElementById('btn-save-draft');
+
+      if (user.verification_status !== 'verified') {
+        lockBanner.className = 'alert alert-warning';
+        lockBanner.innerHTML = `
+          <div style="font-size:1.4rem;">⚠️</div>
+          <div>
+            <strong>Submission Locked:</strong> Your account is currently <strong>${user.verification_status.replace('_', ' ').toUpperCase()}</strong>.
+            Applications cannot be submitted to college authorities until an institutional administrator verifies your academic roll number and identity.
+          </div>
+        `;
+        lockBanner.style.display = 'flex';
+        submitBtn.disabled = true;
+        draftBtn.disabled = true;
+      }
+
+      // If user is CR, show CR mode selector
+      const crSelector = document.getElementById('cr-mode-selector');
+      const collectiveFields = document.getElementById('collective-fields');
+      if (user.role === 'cr') {
+        crSelector.style.display = 'block';
+        document.querySelectorAll('input[name="applicationType"]').forEach(r => {
+          r.addEventListener('change', (e) => {
+            collectiveFields.style.display = e.target.value === 'collective' ? 'block' : 'none';
+          });
+        });
+      }
+
+      // 2. Load Authorized Recipients based on Hierarchy
+      const recipientsContainer = document.getElementById('recipients-container');
+      try {
+        const hRes = await API.get('/api/student/hierarchy-recipients');
+        if (hRes.success && hRes.recipients && hRes.recipients.length > 0) {
+          recipientsContainer.innerHTML = hRes.recipients.map((rec, i) => `
+            <label style="border:1px solid var(--border);padding:14px;border-radius:var(--radius-sm);cursor:pointer;background:#fff;display:flex;gap:10px;align-items:flex-start;transition:all .15s;">
+              <input type="radio" name="recipientRole" value="${rec.role}" data-user-id="${rec.userId || ''}" ${i === 0 ? 'checked' : ''} style="margin-top:4px;">
+              <div>
+                <div style="font-weight:600;font-size:.9rem;color:var(--primary);">${UI.escapeHtml(rec.designation)}</div>
+                <div style="font-size:.82rem;font-weight:500;">${UI.escapeHtml(rec.name)}</div>
+                <div style="font-size:.72rem;color:var(--text-muted);margin-top:2px;">${UI.escapeHtml(rec.description)}</div>
+              </div>
+            </label>
+          `).join('');
+        }
+      } catch (err) {
+        console.error('Failed to load recipients', err);
+      }
+
+      // 3. Tab switching (AI vs Manual)
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          const isAi = tab.dataset.tab === 'tab-ai';
+          document.getElementById('tab-ai-content').style.display = isAi ? 'block' : 'none';
+        });
+      });
+
+      // 4. AI Writing Assistant Actions
+      const aiPrompt = document.getElementById('ai-prompt');
+      const subjectInput = document.getElementById('subject');
+      const bodyInput = document.getElementById('body');
+      const aiLoading = document.getElementById('ai-loading');
+      const aiBadge = document.getElementById('ai-source-badge');
+
+      async function triggerAiAction(action) {
+        const promptText = aiPrompt.value.trim() || bodyInput.value.trim();
+        if (!promptText && action === 'generate') {
+          UI.showToast('Please enter a short description of your request in the AI box.', 'warning');
+          aiPrompt.focus();
+          return;
+        }
+
+        const selectedRec = document.querySelector('input[name="recipientRole"]:checked');
+        const isCollective = user.role === 'cr' && document.querySelector('input[name="applicationType"]:checked')?.value === 'collective';
+
+        aiLoading.style.display = 'flex';
+        aiBadge.style.display = 'none';
+
+        try {
+          const res = await API.post('/api/ai/generate', {
+            prompt: promptText,
+            category: document.getElementById('category').value,
+            recipientRole: selectedRec ? selectedRec.value : 'coordinator',
+            language: document.getElementById('language').value,
+            isCollective,
+            className: document.getElementById('className')?.value,
+            studentsCount: document.getElementById('studentsCount')?.value,
+            action
+          });
+
+          if (res.success && res.data) {
+            if (res.data.subject) subjectInput.value = res.data.subject.replace(/^Subject:\s*/i, '');
+            if (res.data.body) bodyInput.value = res.data.body;
+
+            aiBadge.textContent = res.data.source === 'gemini' ? '🤖 Generated by Gemini' : '⚡ Formatted by Academic Engine';
+            aiBadge.className = res.data.source === 'gemini' ? 'badge badge-approved' : 'badge badge-info';
+            aiBadge.style.display = 'inline-block';
+            UI.showToast('Application drafted successfully! Review and edit if needed.', 'success');
+          } else {
+            UI.showToast(res.error || 'AI generation failed.', 'danger');
+          }
+        } catch (err) {
+          UI.showToast('Error communicating with AI service.', 'danger');
+        } finally {
+          aiLoading.style.display = 'none';
+        }
+      }
+
+      document.getElementById('btn-ai-generate').addEventListener('click', () => triggerAiAction('generate'));
+      document.getElementById('btn-ai-improve').addEventListener('click', () => triggerAiAction('improve'));
+      document.getElementById('btn-ai-shorten').addEventListener('click', () => triggerAiAction('shorten'));
+      document.getElementById('btn-ai-trans-hi').addEventListener('click', () => {
+        document.getElementById('language').value = 'hi';
+        triggerAiAction('translate_en_hi');
+      });
+      document.getElementById('btn-ai-trans-en').addEventListener('click', () => {
+        document.getElementById('language').value = 'en';
+        triggerAiAction('translate_hi_en');
+      });
+
+      // 5. File Upload Handling
+      const dropArea = document.getElementById('file-drop-area');
+      const fileInput = document.getElementById('file-input');
+      const fileList = document.getElementById('file-list');
+      let selectedFiles = [];
+
+      dropArea.addEventListener('click', () => fileInput.click());
+      dropArea.addEventListener('dragover', (e) => { e.preventDefault(); dropArea.style.borderColor = 'var(--primary)'; });
+      dropArea.addEventListener('dragleave', () => { dropArea.style.borderColor = 'var(--border)'; });
+      dropArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropArea.style.borderColor = 'var(--border)';
+        handleFiles(e.dataTransfer.files);
+      });
+      fileInput.addEventListener('change', () => handleFiles(fileInput.files));
+
+      function handleFiles(files) {
+        for (const file of files) {
+          if (selectedFiles.length >= 5) {
+            UI.showToast('Maximum 5 files allowed.', 'warning');
+            break;
+          }
+          if (file.size > 10 * 1024 * 1024) {
+            UI.showToast(`File ${file.name} exceeds 10MB limit.`, 'warning');
+            continue;
+          }
+          selectedFiles.push(file);
+        }
+        renderFileList();
+      }
+
+      function renderFileList() {
+        fileList.innerHTML = selectedFiles.map((f, i) => `
+          <div class="file-item">
+            <span>📎 ${UI.escapeHtml(f.name)} (${(f.size / 1024).toFixed(1)} KB)</span>
+            <button type="button" class="btn btn-sm btn-outline" style="color:var(--danger);padding:2px 6px;" onclick="removeFile(${i})">&times;</button>
+          </div>
+        `).join('');
+      }
+
+      window.removeFile = (idx) => {
+        selectedFiles.splice(idx, 1);
+        renderFileList();
+      };
+
+      // 6. A4 Document Preview
+      const previewModal = document.getElementById('preview-modal');
+      const a4DocContent = document.getElementById('a4-document-content');
+
+      document.getElementById('btn-preview-doc').addEventListener('click', () => {
+        const subject = subjectInput.value.trim() || '[Subject of Application]';
+        const body = bodyInput.value.trim() || '[Application Body Content]';
+        const category = document.getElementById('category').value;
+        const selectedRec = document.querySelector('input[name="recipientRole"]:checked');
+        const recLabel = selectedRec ? selectedRec.closest('label').querySelector('div div').textContent : 'Reviewing Authority';
+
+        const isCollective = user.role === 'cr' && document.querySelector('input[name="applicationType"]:checked')?.value === 'collective';
+
+        const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+        a4DocContent.innerHTML = `
+          <div style="text-align:center;border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:24px;">
+            <div style="font-size:1.1rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;">CAMPUS ACADEMIC GOVERNANCE</div>
+            <div style="font-size:.85rem;color:#333;">DIGITAL APPLICATION FORM • ${category.toUpperCase()}</div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;margin-bottom:20px;font-size:.88rem;">
+            <div><strong>Date:</strong> ${today}</div>
+            <div><strong>Tracking:</strong> [CFA-${new Date().getFullYear()}-XXXXXX]</div>
+          </div>
+
+          <div style="margin-bottom:20px;font-size:.9rem;line-height:1.5;">
+            <strong>To,</strong><br>
+            ${recLabel}<br>
+            Department of ${UI.escapeHtml(user.department_name || 'Engineering & Technology')}<br>
+            University Campus
+          </div>
+
+          <div style="margin-bottom:20px;font-size:.95rem;font-weight:700;">
+            Subject: ${UI.escapeHtml(subject)}
+          </div>
+
+          <div style="white-space:pre-wrap;margin-bottom:30px;font-size:.92rem;line-height:1.7;">
+${UI.escapeHtml(body)}
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;margin-top:40px;font-size:.9rem;">
+            <div style="text-align:right;">
+              ${isCollective ? `
+                <strong>On behalf of ${UI.escapeHtml(document.getElementById('className')?.value || `${user.course} Sem ${user.semester} Sec ${user.section}`)}</strong><br>
+                ${UI.escapeHtml(user.full_name)} (Class Representative)<br>
+                Roll No: ${user.roll_number || 'N/A'}<br>
+                Representing ${document.getElementById('studentsCount')?.value || 64} Students
+              ` : `
+                <strong>${UI.escapeHtml(user.full_name)}</strong><br>
+                Roll No: ${user.roll_number || 'N/A'}<br>
+                ${user.course} ${user.department_name} (Sem ${user.semester}, Sec ${user.section})<br>
+                Email: ${user.email}
+              `}
+            </div>
+          </div>
+        `;
+
+        previewModal.classList.add('show');
+      });
+
+      document.getElementById('preview-close').addEventListener('click', () => previewModal.classList.remove('show'));
+      document.getElementById('preview-ok').addEventListener('click', () => previewModal.classList.remove('show'));
+      document.getElementById('btn-print-preview').addEventListener('click', () => window.print());
+
+      // 7. Form Submission & Draft Saving
+      async function submitForm(isDraft = false) {
+        if (!subjectInput.value.trim() || !bodyInput.value.trim()) {
+          UI.showToast('Subject line and Application Body are required.', 'warning');
+          return;
+        }
+
+        const selectedRec = document.querySelector('input[name="recipientRole"]:checked');
+        if (!selectedRec) {
+          UI.showToast('Please select a recipient authority.', 'warning');
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append('title', subjectInput.value.trim());
+        formData.append('subject', subjectInput.value.trim());
+        formData.append('body', bodyInput.value.trim());
+        formData.append('category', document.getElementById('category').value);
+        formData.append('recipientRole', selectedRec.value);
+        if (selectedRec.dataset.userId) {
+          formData.append('recipientId', selectedRec.dataset.userId);
+        }
+        formData.append('language', document.getElementById('language').value);
+        formData.append('supportingDetails', document.getElementById('supportingDetails').value.trim());
+        formData.append('isDraft', isDraft ? 'true' : 'false');
+
+        const isCollective = user.role === 'cr' && document.querySelector('input[name="applicationType"]:checked')?.value === 'collective';
+        if (isCollective) {
+          formData.append('applicationType', 'collective');
+          formData.append('className', document.getElementById('className').value.trim());
+          formData.append('studentsCount', document.getElementById('studentsCount').value || 1);
+        } else {
+          formData.append('applicationType', 'individual');
+        }
+
+        for (const file of selectedFiles) {
+          formData.append('attachments', file);
+        }
+
+        submitBtn.disabled = true;
+        draftBtn.disabled = true;
+        submitBtn.textContent = isDraft ? 'Saving Draft...' : 'Submitting Application...';
+
+        try {
+          const res = await API.upload('/api/student/applications', formData);
+          if (res.success) {
+            UI.showToast(res.message || 'Application submitted successfully!', 'success');
+            setTimeout(() => {
+              window.location.href = `/application-details.html?id=${res.applicationId}`;
+            }, 800);
+          } else {
+            UI.showToast(res.error || 'Submission failed.', 'danger');
+            submitBtn.disabled = false;
+            draftBtn.disabled = false;
+            submitBtn.textContent = '🚀 Submit Application';
+          }
+        } catch (err) {
+          UI.showToast('A network error occurred while submitting.', 'danger');
+          submitBtn.disabled = false;
+          draftBtn.disabled = false;
+          submitBtn.textContent = '🚀 Submit Application';
+        }
+      }
+
+      // Handle Submit with confirmation
+      document.getElementById('application-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        UI.showModal({
+          title: 'Confirm Digital Application Submission',
+          body: `
+            <p>You are about to submit this application to the <strong>${document.querySelector('input[name="recipientRole"]:checked')?.closest('label')?.querySelector('div div')?.textContent || 'selected authority'}</strong>.</p>
+            <p style="margin-top:8px;font-size:.85rem;color:var(--text-secondary);">
+              Once submitted, your application will enter the institutional review queue and be assigned a unique tracking ID. You will be able to track status updates in real-time.
+            </p>
+          `,
+          confirmText: 'Yes, Submit Now',
+          cancelText: 'Review Again',
+          onConfirm: () => submitForm(false)
+        });
+      });
+
+      document.getElementById('btn-save-draft').addEventListener('click', () => submitForm(true));
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Verification Ledger — CampusFlow AI</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <div class="app-layout">
+    <div id="sidebar-container"></div>
+
+    <div class="main-content">
+      <div id="topbar-container"></div>
+
+      <main class="page-content">
+        <!-- Header -->
+        <div style="margin-bottom:24px;">
+          <h1>Student Registration Verification</h1>
+          <p style="color:var(--text-secondary);font-size:.9rem;">
+            Verify newly registered students against university admission ledgers before unlocking digital application privileges.
+          </p>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-body" style="padding:16px 20px;">
+            <div class="filter-bar">
+              <div class="form-group">
+                <label class="form-label" for="filter-status">Verification Status</label>
+                <select id="filter-status" class="form-control">
+                  <option value="all">All Registrations</option>
+                  <option value="pending_verification" selected>Pending Verification ⏳</option>
+                  <option value="verified">Verified ✅</option>
+                  <option value="rejected">Rejected ❌</option>
+                  <option value="suspended">Suspended 🚫</option>
+                </select>
+              </div>
+
+              <div class="form-group" style="flex:1;min-width:220px;">
+                <label class="form-label" for="search-input">Search Students</label>
+                <input type="text" id="search-input" class="form-control" placeholder="Search by student name, roll number, email...">
+              </div>
+
+              <button type="button" id="btn-reset-filters" class="btn btn-outline" style="align-self:flex-end;">
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Student Verification Table Card -->
+        <div class="card">
+          <div class="card-header">
+            <span id="students-count">Student Registrations</span>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Roll Number</th>
+                    <th>Full Name</th>
+                    <th>Role</th>
+                    <th>Department</th>
+                    <th>Course & Class</th>
+                    <th>Email / Contact</th>
+                    <th>Status</th>
+                    <th>Registered On</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="students-body">
+                  <tr>
+                    <td colspan="9" style="text-align:center;padding:40px;">
+                      <div class="spinner"></div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- VERIFICATION MODAL (Confidential Parent Details & Actions) -->
+        <div class="modal-overlay" id="verification-modal">
+          <div class="modal modal-lg">
+            <div class="modal-header">
+              <span>Student Identity Verification & Ledger Inspection</span>
+              <button class="modal-close" id="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-content">
+              <div class="spinner"></div>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Admin only page
+      const admin = await Auth.requireAuth(['admin']);
+      if (!admin) return;
+
+      document.getElementById('sidebar-container').innerHTML = UI.buildAdminSidebar(admin);
+      document.getElementById('topbar-container').innerHTML = UI.buildTopbar('Student Verification');
+      UI.setupPage(admin, 'verify-students');
+
+      const tbody = document.getElementById('students-body');
+      const studentsCount = document.getElementById('students-count');
+      const filterStatus = document.getElementById('filter-status');
+      const searchInput = document.getElementById('search-input');
+      const resetBtn = document.getElementById('btn-reset-filters');
+
+      async function loadStudents() {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;"><div class="spinner"></div></td></tr>';
+
+        const params = new URLSearchParams();
+        if (filterStatus.value !== 'all') params.append('status', filterStatus.value);
+        if (searchInput.value.trim()) params.append('search', searchInput.value.trim());
+
+        try {
+          const res = await API.get(`/api/verification/students?${params.toString()}`);
+          if (res.success && res.students) {
+            studentsCount.textContent = `Registrations (${res.students.length})`;
+
+            if (res.students.length === 0) {
+              tbody.innerHTML = `
+                <tr>
+                  <td colspan="9">
+                    <div class="empty-state">
+                      <div class="empty-icon">📂</div>
+                      <div class="empty-title">No student registrations found</div>
+                      <div class="empty-desc">No accounts match the current status and search filters.</div>
+                    </div>
+                  </td>
+                </tr>
+              `;
+              return;
+            }
+
+            tbody.innerHTML = res.students.map(s => `
+              <tr>
+                <td style="font-family:monospace;font-weight:700;">${UI.escapeHtml(s.roll_number || 'N/A')}</td>
+                <td>
+                  <div style="font-weight:600;">${UI.escapeHtml(s.full_name)}</div>
+                </td>
+                <td>
+                  ${s.role === 'cr' ? '<span class="badge badge-cr">CR</span>' : '<span class="badge badge-individual">Student</span>'}
+                </td>
+                <td>${UI.escapeHtml(s.department_code || s.department_name || '—')}</td>
+                <td>${s.course || 'B.Tech'} Sem ${s.semester || '—'} (${s.section || 'A'})</td>
+                <td>
+                  <div>${UI.escapeHtml(s.email)}</div>
+                  <div style="font-size:.72rem;color:var(--text-muted);">${UI.escapeHtml(s.mobile_number || '')}</div>
+                </td>
+                <td>${UI.formatVerification(s.verification_status)}</td>
+                <td>${UI.formatDate(s.created_at)}</td>
+                <td>
+                  <button type="button" class="btn btn-sm btn-primary" onclick="openVerificationModal(${s.id})">
+                    Verify Identity →
+                  </button>
+                </td>
+              </tr>
+            `).join('');
+          }
+        } catch (err) {
+          console.error('Error loading students', err);
+        }
+      }
+
+      filterStatus.addEventListener('change', loadStudents);
+      let debounceTimer;
+      searchInput.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(loadStudents, 300);
+      });
+      resetBtn.addEventListener('click', () => {
+        filterStatus.value = 'all';
+        searchInput.value = '';
+        loadStudents();
+      });
+
+      // Verification Modal Logic
+      const modal = document.getElementById('verification-modal');
+      const modalContent = document.getElementById('modal-content');
+      document.getElementById('modal-close-btn').addEventListener('click', () => modal.classList.remove('show'));
+
+      window.openVerificationModal = async (studentId) => {
+        modal.classList.add('show');
+        modalContent.innerHTML = '<div class="spinner"></div>';
+
+        try {
+          const res = await API.get(`/api/verification/students/${studentId}`);
+          if (!res.success || !res.student) {
+            modalContent.innerHTML = '<div class="alert alert-danger">Failed to load student verification profile.</div>';
+            return;
+          }
+
+          const s = res.student;
+          modalContent.innerHTML = `
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
+              <div class="avatar">${s.full_name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase()}</div>
+              <div>
+                <h3 style="margin:0;">${UI.escapeHtml(s.full_name)}</h3>
+                <div style="font-size:.85rem;color:var(--text-secondary);margin-top:2px;">
+                  Roll No: <strong>${UI.escapeHtml(s.roll_number || 'N/A')}</strong> • ${s.course} ${s.department_name} (Sem ${s.semester}, Sec ${s.section})
+                </div>
+              </div>
+            </div>
+
+            <!-- Confidential Parent Ledger Info -->
+            <div style="background:#fef2f2;border:1px solid #fecaca;padding:14px;border-radius:var(--radius-sm);margin-bottom:18px;">
+              <div style="font-weight:700;color:var(--danger);font-size:.85rem;margin-bottom:6px;">
+                🔒 RESTRICTED: University Ledger Parentage Records
+              </div>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <div class="detail-label">Father's Full Name</div>
+                  <div class="detail-value" style="font-weight:600;">${UI.escapeHtml(s.father_name || 'Not provided')}</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Mother's Full Name</div>
+                  <div class="detail-value" style="font-weight:600;">${UI.escapeHtml(s.mother_name || 'Not provided')}</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Mobile Number</div>
+                  <div class="detail-value">${UI.escapeHtml(s.mobile_number || 'Not provided')}</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Email Address</div>
+                  <div class="detail-value">${UI.escapeHtml(s.email)}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Current Status -->
+            <div style="margin-bottom:18px;">
+              <div style="font-size:.82rem;color:var(--text-muted);font-weight:600;margin-bottom:4px;">Current Status</div>
+              <div>
+                ${UI.formatVerification(s.verification_status)}
+                ${s.verification_remarks ? `<span style="font-size:.85rem;color:var(--text-secondary);margin-left:8px;">"${UI.escapeHtml(s.verification_remarks)}"</span>` : ''}
+              </div>
+            </div>
+
+            <!-- Verification Action Form -->
+            <form id="verif-action-form" style="background:#f8fafc;padding:18px;border-radius:var(--radius-sm);border:1px solid var(--border);">
+              <h4 style="margin-bottom:12px;font-size:.95rem;color:var(--primary);">Administrative Verification Decision</h4>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="action-status">New Verification Status <span class="required">*</span></label>
+                  <select id="action-status" class="form-control" required>
+                    <option value="verified" ${s.verification_status === 'verified' ? 'selected' : ''}>✅ Verified (Unlock Digital Application Submission)</option>
+                    <option value="rejected" ${s.verification_status === 'rejected' ? 'selected' : ''}>❌ Rejected (Roll number or identity invalid)</option>
+                    <option value="suspended" ${s.verification_status === 'suspended' ? 'selected' : ''}>🚫 Suspended (Account disabled)</option>
+                    <option value="pending_verification" ${s.verification_status === 'pending_verification' ? 'selected' : ''}>⏳ Pending Verification (In Review)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="action-remarks">Verification Remarks / Reason</label>
+                <input type="text" id="action-remarks" class="form-control" value="${UI.escapeHtml(s.verification_remarks || '')}" placeholder="e.g. Identity matched with registrar roll book.">
+              </div>
+
+              <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;">
+                <button type="button" class="btn btn-outline" onclick="document.getElementById('verification-modal').classList.remove('show')">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="btn-save-verif">Save & Update Status</button>
+              </div>
+            </form>
+          `;
+
+          // Handle Action Submit
+          document.getElementById('verif-action-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const saveBtn = document.getElementById('btn-save-verif');
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+
+            const status = document.getElementById('action-status').value;
+            const remarks = document.getElementById('action-remarks').value;
+
+            try {
+              const uRes = await API.patch(`/api/verification/students/${studentId}/status`, {
+                status,
+                remarks
+              });
+
+              if (uRes.success) {
+                UI.showToast(uRes.message || 'Student verification status updated successfully.', 'success');
+                modal.classList.remove('show');
+                loadStudents();
+              } else {
+                UI.showToast(uRes.error || 'Failed to update status.', 'danger');
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save & Update Status';
+              }
+            } catch (err) {
+              UI.showToast('Network error while saving verification.', 'danger');
+              saveBtn.disabled = false;
+              saveBtn.textContent = 'Save & Update Status';
+            }
+          });
+
+        } catch (err) {
+          console.error('Failed to open modal', err);
+        }
+      };
+
+      loadStudents();
+    });
+  </script>
+</body>
+</html>

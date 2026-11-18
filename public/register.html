@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Registration — CampusFlow AI</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="auth-page">
+
+  <div class="auth-topbar">
+    <a href="/index.html"><span>🎓</span> CampusFlow AI</a>
+  </div>
+
+  <div class="auth-container">
+    <div class="auth-card register-card">
+      <h1>Student Account Registration</h1>
+      <p class="auth-subtitle">Create your institutional student or class representative account</p>
+
+      <div class="alert alert-warning" style="margin-bottom:20px;">
+        <div>
+          <strong>⚠️ Institutional Policy Notice:</strong> All newly registered student accounts initially receive the status <strong>PENDING VERIFICATION</strong>. The university registrar/administrative office will verify your identity against academic ledgers before digital application submission is unlocked.
+        </div>
+      </div>
+
+      <div id="alert-box" style="display:none;" class="alert"></div>
+
+      <form id="register-form">
+        <!-- Personal Information -->
+        <h3 style="margin-bottom:12px;font-size:1rem;color:var(--primary);border-bottom:1px solid var(--border);padding-bottom:6px;">
+          1. Student Identity & Contact
+        </h3>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="fullName">Full Name <span class="required">*</span></label>
+            <input type="text" id="fullName" class="form-control" placeholder="e.g. Rahul Sharma" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="rollNumber">University Roll Number <span class="required">*</span></label>
+            <input type="text" id="rollNumber" class="form-control" placeholder="e.g. 22CSE099" required style="text-transform:uppercase;">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="email">Institutional Email / Gmail <span class="required">*</span></label>
+            <input type="email" id="email" class="form-control" placeholder="e.g. rahul.22cse@campusflow.edu" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="mobileNumber">Mobile Number <span class="required">*</span></label>
+            <input type="tel" id="mobileNumber" class="form-control" placeholder="e.g. +91 9876543210" required>
+          </div>
+        </div>
+
+        <!-- Verification & Parent Details (Confidential) -->
+        <h3 style="margin:16px 0 12px;font-size:1rem;color:var(--primary);border-bottom:1px solid var(--border);padding-bottom:6px;">
+          2. Parentage Verification (Restricted Visibility)
+        </h3>
+        <p style="font-size:.78rem;color:var(--text-muted);margin-bottom:12px;">
+          Parent names are encrypted and visible only to authorized verification officers for ledger cross-referencing.
+        </p>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="fatherName">Father's Name <span class="required">*</span></label>
+            <input type="text" id="fatherName" class="form-control" placeholder="e.g. Suresh Sharma" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="motherName">Mother's Name <span class="required">*</span></label>
+            <input type="text" id="motherName" class="form-control" placeholder="e.g. Anita Sharma" required>
+          </div>
+        </div>
+
+        <!-- Academic Enrollment -->
+        <h3 style="margin:16px 0 12px;font-size:1rem;color:var(--primary);border-bottom:1px solid var(--border);padding-bottom:6px;">
+          3. Academic Enrollment
+        </h3>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="departmentId">Academic Department <span class="required">*</span></label>
+            <select id="departmentId" class="form-control" required>
+              <option value="">Select Department...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="course">Program / Course <span class="required">*</span></label>
+            <select id="course" class="form-control" required>
+              <option value="B.Tech">B.Tech</option>
+              <option value="M.Tech">M.Tech</option>
+              <option value="BCA">BCA</option>
+              <option value="MCA">MCA</option>
+              <option value="MBA">MBA</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="semester">Current Semester <span class="required">*</span></label>
+            <select id="semester" class="form-control" required>
+              <option value="1">Semester 1</option>
+              <option value="2">Semester 2</option>
+              <option value="3">Semester 3</option>
+              <option value="4" selected>Semester 4</option>
+              <option value="5">Semester 5</option>
+              <option value="6">Semester 6</option>
+              <option value="7">Semester 7</option>
+              <option value="8">Semester 8</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="section">Section <span class="required">*</span></label>
+            <select id="section" class="form-control" required>
+              <option value="A" selected>Section A</option>
+              <option value="B">Section B</option>
+              <option value="C">Section C</option>
+              <option value="D">Section D</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="background:var(--border-light);padding:12px;border-radius:var(--radius-sm);margin:14px 0;">
+          <label class="form-check">
+            <input type="checkbox" id="isCR">
+            <span><strong>Register as Class Representative (CR)</strong> — I have been elected or assigned by the department to represent my class section.</span>
+          </label>
+        </div>
+
+        <!-- Security Credentials -->
+        <h3 style="margin:16px 0 12px;font-size:1rem;color:var(--primary);border-bottom:1px solid var(--border);padding-bottom:6px;">
+          4. Security Credentials
+        </h3>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="password">Password (min 6 characters) <span class="required">*</span></label>
+            <input type="password" id="password" class="form-control" placeholder="••••••••" required minlength="6">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="confirmPassword">Confirm Password <span class="required">*</span></label>
+            <input type="password" id="confirmPassword" class="form-control" placeholder="••••••••" required minlength="6">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="submit-btn" style="margin-top:20px;">
+          Complete Registration (Submit for Verification)
+        </button>
+      </form>
+
+      <div style="text-align:center;font-size:.85rem;color:var(--text-secondary);margin-top:20px;">
+        Already registered? <a href="/login.html"><strong>Sign in here</strong></a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    const form = document.getElementById('register-form');
+    const alertBox = document.getElementById('alert-box');
+    const submitBtn = document.getElementById('submit-btn');
+    const deptSelect = document.getElementById('departmentId');
+
+    function showAlert(msg, cls) {
+      alertBox.textContent = msg;
+      alertBox.className = `alert ${cls}`;
+      alertBox.style.display = 'block';
+      alertBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // Load departments
+    async function loadDepartments() {
+      try {
+        const res = await API.get('/api/auth/departments');
+        if (res.success && res.departments) {
+          res.departments.forEach(dept => {
+            const opt = document.createElement('option');
+            opt.value = dept.id;
+            opt.textContent = `${dept.name} (${dept.code})`;
+            deptSelect.appendChild(opt);
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load departments', err);
+      }
+    }
+    loadDepartments();
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      alertBox.style.display = 'none';
+
+      const pw = document.getElementById('password').value;
+      const cpw = document.getElementById('confirmPassword').value;
+
+      if (pw !== cpw) {
+        showAlert('Passwords do not match. Please re-enter both password fields.', 'alert-danger');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting registration...';
+
+      const payload = {
+        fullName: document.getElementById('fullName').value.trim(),
+        rollNumber: document.getElementById('rollNumber').value.trim().toUpperCase(),
+        email: document.getElementById('email').value.trim(),
+        mobileNumber: document.getElementById('mobileNumber').value.trim(),
+        fatherName: document.getElementById('fatherName').value.trim(),
+        motherName: document.getElementById('motherName').value.trim(),
+        departmentId: deptSelect.value,
+        course: document.getElementById('course').value,
+        semester: document.getElementById('semester').value,
+        section: document.getElementById('section').value,
+        isCR: document.getElementById('isCR').checked,
+        password: pw,
+        confirmPassword: cpw
+      };
+
+      try {
+        const res = await Auth.register(payload);
+        if (res.success) {
+          showAlert(
+            'Registration successful! Your account is currently PENDING VERIFICATION. You can log in with your credentials to view your profile and check verification updates.',
+            'alert-success'
+          );
+          form.reset();
+          setTimeout(() => {
+            window.location.href = '/login.html';
+          }, 3000);
+        } else {
+          showAlert(res.error || 'Registration failed. Please check your information.', 'alert-danger');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Complete Registration (Submit for Verification)';
+        }
+      } catch (err) {
+        showAlert('Network or server error during registration.', 'alert-danger');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Complete Registration (Submit for Verification)';
+      }
+    });
+  </script>
+</body>
+</html>

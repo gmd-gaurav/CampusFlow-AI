@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Sign In — CampusFlow AI</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="auth-page">
+
+  <div class="auth-topbar">
+    <a href="/index.html"><span>🎓</span> CampusFlow AI</a>
+  </div>
+
+  <div class="auth-container">
+    <div class="auth-card login-card">
+      <h1>Portal Sign In</h1>
+      <p class="auth-subtitle">Access your Student / Representative or Faculty Administration panel</p>
+
+      <div id="alert-box" style="display:none;" class="alert"></div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label class="form-label" for="email">Institutional Email Address <span class="required">*</span></label>
+          <input type="email" id="email" class="form-control" placeholder="e.g. rahul.cse@campusflow.edu" required autofocus>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+            <button type="button" class="password-toggle" id="toggle-pw" aria-label="Toggle password visibility">Show</button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="submit-btn" style="margin-top:20px;">
+          Sign In to CampusFlow
+        </button>
+      </form>
+
+      <div class="divider">DEMO AUTO-FILL ACCOUNTS</div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:18px;">
+        <button type="button" class="btn btn-sm btn-outline demo-btn" data-email="rahul.cse@campusflow.edu" data-pw="Student@123" title="Student Panel">
+          👤 Student (Rahul)
+        </button>
+        <button type="button" class="btn btn-sm btn-outline demo-btn" data-email="cr.cse4a@campusflow.edu" data-pw="Cr@123" title="Class Representative">
+          🏷️ CR (Aakash)
+        </button>
+        <button type="button" class="btn btn-sm btn-outline demo-btn" data-email="coordinator.cse4a@campusflow.edu" data-pw="Coord@123" title="Class Coordinator">
+          📋 Coordinator (Manoj)
+        </button>
+        <button type="button" class="btn btn-sm btn-outline demo-btn" data-email="hod.cse@campusflow.edu" data-pw="Hod@123" title="Head of Department">
+          🏛️ HOD (Dr. Sunita)
+        </button>
+        <button type="button" class="btn btn-sm btn-outline demo-btn" data-email="director@campusflow.edu" data-pw="Director@123" title="Director">
+          ⭐ Director (Swaminathan)
+        </button>
+        <button type="button" class="btn btn-sm btn-outline demo-btn" data-email="admin@campusflow.edu" data-pw="Admin@123" title="System Administrator">
+          ⚙️ Admin (Rajesh)
+        </button>
+        <button type="button" class="btn btn-sm btn-outline demo-btn" data-email="priya.cse@campusflow.edu" data-pw="Student@123" title="Pending Verification Test">
+          ⏳ Pending (Priya)
+        </button>
+      </div>
+
+      <div style="text-align:center;font-size:.85rem;color:var(--text-secondary);margin-top:10px;">
+        New student at the institution? <a href="/register.html"><strong>Register here</strong></a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    // Password visibility toggle
+    const pwInput = document.getElementById('password');
+    const toggleBtn = document.getElementById('toggle-pw');
+    toggleBtn.addEventListener('click', () => {
+      const isPassword = pwInput.type === 'password';
+      pwInput.type = isPassword ? 'text' : 'password';
+      toggleBtn.textContent = isPassword ? 'Hide' : 'Show';
+    });
+
+    // Demo quick autofill buttons
+    document.querySelectorAll('.demo-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('email').value = btn.dataset.email;
+        document.getElementById('password').value = btn.dataset.pw;
+        showAlert('Demo credentials filled. Click "Sign In" or press Enter.', 'alert-info');
+      });
+    });
+
+    // Form submit
+    const form = document.getElementById('login-form');
+    const alertBox = document.getElementById('alert-box');
+    const submitBtn = document.getElementById('submit-btn');
+
+    function showAlert(msg, cls) {
+      alertBox.textContent = msg;
+      alertBox.className = `alert ${cls}`;
+      alertBox.style.display = 'block';
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      alertBox.style.display = 'none';
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Authenticating...';
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await Auth.login(email, password);
+        if (res.success) {
+          showAlert('Login successful! Redirecting...', 'alert-success');
+          const user = res.user;
+          setTimeout(() => {
+            if (user.role === 'student' || user.role === 'cr') {
+              window.location.href = '/student-dashboard.html';
+            } else {
+              window.location.href = '/admin-dashboard.html';
+            }
+          }, 400);
+        } else {
+          showAlert(res.error || 'Authentication failed. Please check your credentials.', 'alert-danger');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Sign In to CampusFlow';
+        }
+      } catch (err) {
+        showAlert('A connection error occurred. Please try again.', 'alert-danger');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Sign In to CampusFlow';
+      }
+    });
+  </script>
+</body>
+</html>

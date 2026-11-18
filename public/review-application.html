@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Application Review & Decision — CampusFlow AI</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <div class="app-layout">
+    <div id="sidebar-container"></div>
+
+    <div class="main-content">
+      <div id="topbar-container"></div>
+
+      <main class="page-content" style="max-width:1300px;">
+        <!-- Top Navigation -->
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+          <div>
+            <a href="/incoming-applications.html" class="btn btn-sm btn-outline">
+              ← Back to Review Queue
+            </a>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span id="header-status-badge"></span>
+            <button type="button" class="btn btn-sm btn-outline" id="btn-print-review">
+              🖨️ Print Form
+            </button>
+          </div>
+        </div>
+
+        <div id="loading-container">
+          <div class="spinner"></div>
+        </div>
+
+        <!-- SPLIT REVIEW LAYOUT -->
+        <div id="review-content" class="review-layout" style="display:none;">
+
+          <!-- LEFT / MAIN SECTION: ORIGINAL APPLICATION & EVIDENCE -->
+          <div class="review-left">
+            <div class="card" style="margin-bottom:24px;">
+              <div class="card-header">
+                <div>
+                  <span id="app-id" style="font-weight:700;font-size:1rem;color:var(--primary);"></span>
+                  <span id="app-type" style="margin-left:8px;"></span>
+                </div>
+                <span id="app-category" class="badge badge-info"></span>
+              </div>
+
+              <div class="card-body">
+                <!-- Applicant Details Header -->
+                <div class="detail-grid" style="margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--border-light);">
+                  <div class="detail-item">
+                    <div class="detail-label">Student Name</div>
+                    <div class="detail-value" id="applicant-name" style="font-weight:600;"></div>
+                  </div>
+                  <div class="detail-item">
+                    <div class="detail-label">University Roll Number</div>
+                    <div class="detail-value" id="applicant-roll" style="font-family:monospace;font-weight:600;"></div>
+                  </div>
+                  <div class="detail-item">
+                    <div class="detail-label">Department & Program</div>
+                    <div class="detail-value" id="applicant-dept"></div>
+                  </div>
+                  <div class="detail-item">
+                    <div class="detail-label">Semester & Section</div>
+                    <div class="detail-value" id="applicant-class"></div>
+                  </div>
+                  <div class="detail-item">
+                    <div class="detail-label">Student Contact</div>
+                    <div class="detail-value" id="applicant-contact"></div>
+                  </div>
+                  <div class="detail-item">
+                    <div class="detail-label">Submission Timestamp</div>
+                    <div class="detail-value" id="submission-date"></div>
+                  </div>
+                </div>
+
+                <!-- Collective class details if applicable -->
+                <div id="collective-info" style="display:none;background:#e8eaf6;border:1px solid #c5cae9;padding:12px;border-radius:var(--radius-sm);margin-bottom:20px;">
+                  <strong style="color:var(--primary);">Collective Class Application:</strong>
+                  Submitted on behalf of <span id="collective-class-name"></span> (<span id="collective-student-count"></span> enrolled students represented).
+                </div>
+
+                <!-- Subject -->
+                <div style="margin-bottom:18px;">
+                  <div style="font-size:.78rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;">Application Subject</div>
+                  <div style="font-size:1.15rem;font-weight:700;color:var(--text);margin-top:2px;" id="app-subject"></div>
+                </div>
+
+                <!-- Complete Original Body -->
+                <div style="margin-bottom:24px;">
+                  <div style="font-size:.78rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;margin-bottom:8px;">Original Petition Body (Submitted Text)</div>
+                  <div id="app-body" style="background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm);padding:24px;white-space:pre-wrap;font-family:'Georgia', serif;line-height:1.8;font-size:.95rem;"></div>
+                </div>
+
+                <!-- Supporting details -->
+                <div id="supporting-block" style="display:none;margin-bottom:20px;">
+                  <div style="font-size:.78rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;">Additional Supporting Remarks</div>
+                  <div id="app-supporting" style="font-size:.88rem;color:var(--text-secondary);margin-top:4px;"></div>
+                </div>
+
+                <!-- Attachments -->
+                <div id="attachments-block" style="display:none;">
+                  <div style="font-size:.78rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;margin-bottom:8px;">Attached Evidence / Certificates</div>
+                  <div id="attachments-list" style="display:flex;flex-wrap:wrap;gap:10px;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Historical Audit Log -->
+            <div class="card">
+              <div class="card-header">
+                <span>Application History & Audit Trail</span>
+              </div>
+              <div class="card-body">
+                <div class="timeline" id="timeline-list"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT / REVIEW SECTION: AI SUMMARY & HUMAN DECISION BUTTONS -->
+          <div class="review-right">
+
+            <!-- AI-GENERATED SUMMARY & KEY INFO -->
+            <div class="ai-summary-card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <h4 style="margin:0;">🤖 Institutional AI Summary</h4>
+                <button type="button" class="btn btn-sm btn-outline" id="btn-re-summarize" style="padding:2px 8px;font-size:.72rem;">
+                  ↻ Re-analyze
+                </button>
+              </div>
+
+              <p id="ai-summary-text" style="font-size:.9rem;line-height:1.5;margin-bottom:14px;color:#1e293b;font-weight:500;">
+                Analyzing petition content...
+              </p>
+
+              <dl class="ai-key-info">
+                <dt>Main Request</dt>
+                <dd id="key-main-request">—</dd>
+
+                <dt>Relevant Dates / Timeframe</dt>
+                <dd id="key-dates">—</dd>
+
+                <dt>Applicant Credentials</dt>
+                <dd id="key-applicant">—</dd>
+
+                <dt>Missing Information Flag</dt>
+                <dd id="key-missing" style="color:var(--danger);font-weight:500;">None detected</dd>
+
+                <dt>Application Tone & Clarity</dt>
+                <dd id="key-quality">—</dd>
+              </dl>
+            </div>
+
+            <!-- HUMAN DECISION CARD -->
+            <div class="card" id="decision-panel">
+              <div class="card-header">
+                <span>Official Faculty Decision</span>
+              </div>
+              <div class="card-body">
+
+                <!-- EXISTING DECISION NOTICE (if already resolved) -->
+                <div id="already-reviewed-notice" style="display:none;">
+                  <div id="existing-decision-banner" class="status-large" style="padding:14px;margin-bottom:14px;">
+                    <div id="existing-icon" style="font-size:1.6rem;"></div>
+                    <div>
+                      <div id="existing-decision-title" style="font-weight:700;"></div>
+                      <div id="existing-reviewer-meta" style="font-size:.78rem;opacity:.9;"></div>
+                    </div>
+                  </div>
+                  <div style="margin-bottom:12px;">
+                    <div style="font-size:.78rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;">Recorded Remarks</div>
+                    <div id="existing-remarks" style="background:#f8fafc;padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border);font-size:.88rem;margin-top:4px;"></div>
+                  </div>
+                  <p style="font-size:.78rem;color:var(--text-muted);font-style:italic;">
+                    This application has been finalized. Audit logs preserve all past decisions.
+                  </p>
+                </div>
+
+                <!-- PENDING REVIEW DECISION FORM (Active if pending) -->
+                <div id="pending-decision-form">
+                  <p style="font-size:.82rem;color:var(--text-secondary);margin-bottom:14px;">
+                    Review the original application and AI summary. Enter institutional remarks before confirming your decision.
+                  </p>
+
+                  <div class="form-group">
+                    <label class="form-label" for="decision-remarks">
+                      Reviewer Remarks <span id="remarks-required-label" style="display:none;color:var(--danger);">* (Mandatory for Rejection)</span>
+                    </label>
+                    <textarea id="decision-remarks" class="form-control" placeholder="Provide instructions, approval conditions, or reasons for rejection..."></textarea>
+                    <div class="form-hint">
+                      Rejection requires a clear explanatory reason. Approval remarks are optional but recommended.
+                    </div>
+                  </div>
+
+                  <div class="decision-actions">
+                    <button type="button" class="btn btn-success" id="btn-approve">
+                      APPROVE ✓
+                    </button>
+                    <button type="button" class="btn btn-danger" id="btn-reject">
+                      REJECT ✕
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 1. Require faculty or admin role
+      const reviewer = await Auth.requireAdminPanel();
+      if (!reviewer) return;
+
+      document.getElementById('sidebar-container').innerHTML = UI.buildAdminSidebar(reviewer);
+      document.getElementById('topbar-container').innerHTML = UI.buildTopbar('Application Review');
+      UI.setupPage(reviewer, 'incoming-applications');
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const appId = urlParams.get('id');
+
+      if (!appId) {
+        UI.showToast('No Application ID provided.', 'danger');
+        window.location.href = '/incoming-applications.html';
+        return;
+      }
+
+      // Load Application
+      let currentApp = null;
+      async function loadApplication() {
+        try {
+          const res = await API.get(`/api/student/applications/${appId}`);
+          if (!res.success || !res.application) {
+            document.getElementById('loading-container').innerHTML = `
+              <div class="empty-state">
+                <div class="empty-icon">❌</div>
+                <div class="empty-title">Application Not Found</div>
+                <div class="empty-desc">${UI.escapeHtml(res.error || 'The requested application could not be loaded.')}</div>
+              </div>
+            `;
+            return;
+          }
+
+          currentApp = res.application;
+          renderApplication(currentApp);
+        } catch (err) {
+          console.error('Failed to load application', err);
+        }
+      }
+
+      function renderApplication(app) {
+        document.getElementById('loading-container').style.display = 'none';
+        document.getElementById('review-content').style.display = 'grid';
+
+        document.getElementById('header-status-badge').innerHTML = UI.formatStatus(app.status);
+        document.getElementById('app-id').textContent = app.application_id;
+        document.getElementById('app-type').innerHTML = app.application_type === 'collective'
+          ? '<span class="badge badge-collective">Collective Class</span>'
+          : '<span class="badge badge-individual">Individual</span>';
+        document.getElementById('app-category').textContent = app.category;
+
+        document.getElementById('applicant-name').textContent = app.applicant_name;
+        document.getElementById('applicant-roll').textContent = app.applicant_roll_number || 'N/A';
+        document.getElementById('applicant-dept').textContent = `${app.course || 'B.Tech'} in ${app.department_name || 'Engineering'}`;
+        document.getElementById('applicant-class').textContent = `Semester ${app.semester || '—'} (Section ${app.section || '—'})`;
+        document.getElementById('applicant-contact').textContent = `${app.applicant_email} • ${app.applicant_mobile || 'No phone'}`;
+        document.getElementById('submission-date').textContent = UI.formatDate(app.submitted_at || app.created_at);
+
+        if (app.application_type === 'collective') {
+          document.getElementById('collective-info').style.display = 'block';
+          document.getElementById('collective-class-name').textContent = app.class_name || `${app.course} Sem ${app.semester} Sec ${app.section}`;
+          document.getElementById('collective-student-count').textContent = app.students_represented_count || 64;
+        }
+
+        document.getElementById('app-subject').textContent = app.subject;
+        document.getElementById('app-body').textContent = app.body;
+
+        if (app.supporting_details) {
+          document.getElementById('supporting-block').style.display = 'block';
+          document.getElementById('app-supporting').textContent = app.supporting_details;
+        }
+
+        if (app.attachments && app.attachments.length > 0) {
+          document.getElementById('attachments-block').style.display = 'block';
+          document.getElementById('attachments-list').innerHTML = app.attachments.map(att => `
+            <a href="/uploads/${att.file_name}" target="_blank" class="btn btn-sm btn-outline">
+              📎 ${UI.escapeHtml(att.original_name)} (${(att.file_size / 1024).toFixed(1)} KB)
+            </a>
+          `).join('');
+        }
+
+        // Timeline
+        if (app.history && app.history.length > 0) {
+          document.getElementById('timeline-list').innerHTML = app.history.map(item => {
+            let dotColor = 'blue';
+            if (item.action === 'reviewed') {
+              dotColor = item.details.includes('APPROVED') ? 'green' : 'red';
+            }
+            return `
+              <div class="timeline-item">
+                <div class="timeline-dot ${dotColor}"></div>
+                <div class="timeline-content">
+                  <div class="timeline-title">${UI.escapeHtml(item.details)}</div>
+                  <div class="timeline-meta">By ${UI.escapeHtml(item.actor_name)} (${UI.escapeHtml(item.actor_role)}) • ${UI.formatDate(item.created_at)}</div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+
+        // AI Summary & Extraction
+        renderAiData(app);
+
+        // Decision Panel State
+        const isReviewed = app.status === 'approved' || app.status === 'rejected';
+        if (isReviewed) {
+          document.getElementById('pending-decision-form').style.display = 'none';
+          document.getElementById('already-reviewed-notice').style.display = 'block';
+
+          const rev = app.reviews?.[0] || {};
+          const banner = document.getElementById('existing-decision-banner');
+          const isApp = app.status === 'approved';
+          banner.className = `status-large ${isApp ? 'approved' : 'rejected'}`;
+          document.getElementById('existing-icon').textContent = isApp ? '✅' : '❌';
+          document.getElementById('existing-decision-title').textContent = isApp ? 'APPROVED' : 'REJECTED';
+          document.getElementById('existing-reviewer-meta').textContent =
+            `Decided by ${rev.reviewer_name || 'Reviewer'} on ${UI.formatDate(rev.reviewed_at)}`;
+          document.getElementById('existing-remarks').textContent = rev.remarks || 'No remarks recorded.';
+        } else {
+          document.getElementById('pending-decision-form').style.display = 'block';
+          document.getElementById('already-reviewed-notice').style.display = 'none';
+        }
+      }
+
+      function renderAiData(app) {
+        document.getElementById('ai-summary-text').textContent = app.ai_summary || 'No AI summary generated.';
+
+        if (app.ai_key_info) {
+          try {
+            const ki = JSON.parse(app.ai_key_info);
+            document.getElementById('key-main-request').textContent = ki.main_request || '—';
+            document.getElementById('key-dates').textContent = ki.relevant_dates || 'Not specified';
+            document.getElementById('key-applicant').textContent = ki.applicant_details || `${app.applicant_name} (${app.applicant_roll_number})`;
+            document.getElementById('key-missing').textContent = ki.missing_information || 'None detected';
+          } catch (_) {}
+        }
+
+        if (app.ai_quality_check) {
+          try {
+            const qc = JSON.parse(app.ai_quality_check);
+            document.getElementById('key-quality').textContent = `${qc.clarity || 'Good'} clarity • ${qc.tone || 'Formal'}`;
+          } catch (_) {}
+        }
+      }
+
+      // Re-summarize button
+      document.getElementById('btn-re-summarize').addEventListener('click', async () => {
+        const btn = document.getElementById('btn-re-summarize');
+        btn.disabled = true;
+        btn.textContent = 'Analyzing...';
+        try {
+          const res = await API.post(`/api/review/applications/${appId}/re-summarize`);
+          if (res.success) {
+            UI.showToast('AI analysis regenerated successfully.', 'success');
+            currentApp.ai_summary = res.summary;
+            currentApp.ai_key_info = JSON.stringify(res.keyInfo);
+            currentApp.ai_quality_check = JSON.stringify(res.qualityCheck);
+            renderAiData(currentApp);
+          } else {
+            UI.showToast('Failed to regenerate summary.', 'danger');
+          }
+        } catch (err) {
+          UI.showToast('Network error during re-summarization.', 'danger');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = '↻ Re-analyze';
+        }
+      });
+
+      // Submit Review Decision
+      async function executeDecision(decision) {
+        const remarksInput = document.getElementById('decision-remarks');
+        const remarks = remarksInput.value.trim();
+
+        if (decision === 'rejected' && !remarks) {
+          UI.showToast('Rejection remarks are mandatory. Please state the reason for rejection.', 'danger');
+          document.getElementById('remarks-required-label').style.display = 'inline';
+          remarksInput.focus();
+          return;
+        }
+
+        const approveBtn = document.getElementById('btn-approve');
+        const rejectBtn = document.getElementById('btn-reject');
+        approveBtn.disabled = true;
+        rejectBtn.disabled = true;
+
+        try {
+          const res = await API.post(`/api/review/applications/${appId}/decision`, {
+            decision,
+            remarks
+          });
+
+          if (res.success) {
+            UI.showToast(`Application ${appId} has been ${decision.toUpperCase()}.`, 'success');
+            setTimeout(() => {
+              window.location.reload();
+            }, 600);
+          } else {
+            UI.showToast(res.error || 'Failed to submit decision.', 'danger');
+            approveBtn.disabled = false;
+            rejectBtn.disabled = false;
+          }
+        } catch (err) {
+          UI.showToast('A network error occurred while submitting decision.', 'danger');
+          approveBtn.disabled = false;
+          rejectBtn.disabled = false;
+        }
+      }
+
+      // Approve click -> confirmation modal
+      document.getElementById('btn-approve').addEventListener('click', () => {
+        UI.showModal({
+          title: 'Confirm Application Approval',
+          body: `
+            <p>You are about to officially <strong>APPROVE</strong> Application <strong>${appId}</strong>.</p>
+            <p style="margin-top:8px;font-size:.85rem;color:var(--text-secondary);">
+              The applicant will be immediately notified, and this approval will be written to the institution's immutable decision log.
+            </p>
+          `,
+          confirmText: 'Confirm Approval',
+          cancelText: 'Cancel',
+          onConfirm: () => executeDecision('approved')
+        });
+      });
+
+      // Reject click -> confirmation modal
+      document.getElementById('btn-reject').addEventListener('click', () => {
+        const remarks = document.getElementById('decision-remarks').value.trim();
+        if (!remarks) {
+          UI.showToast('Rejection requires a mandatory reason. Please enter remarks first.', 'danger');
+          document.getElementById('remarks-required-label').style.display = 'inline';
+          document.getElementById('decision-remarks').focus();
+          return;
+        }
+
+        UI.showModal({
+          title: 'Confirm Application Rejection',
+          body: `
+            <p>You are about to <strong>REJECT</strong> Application <strong>${appId}</strong>.</p>
+            <p style="margin-top:8px;">Reason: "<em>${UI.escapeHtml(remarks)}</em>"</p>
+            <p style="margin-top:8px;font-size:.85rem;color:var(--text-secondary);">
+              The rejection decision and reason will be permanently recorded and visible to the student.
+            </p>
+          `,
+          confirmText: 'Confirm Rejection',
+          cancelText: 'Cancel',
+          danger: true,
+          onConfirm: () => executeDecision('rejected')
+        });
+      });
+
+      document.getElementById('btn-print-review').addEventListener('click', () => window.print());
+
+      loadApplication();
+    });
+  </script>
+</body>
+</html>

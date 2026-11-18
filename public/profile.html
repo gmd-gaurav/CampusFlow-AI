@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Profile — CampusFlow AI</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <div class="app-layout">
+    <div id="sidebar-container"></div>
+
+    <div class="main-content">
+      <div id="topbar-container"></div>
+
+      <main class="page-content" style="max-width:900px;">
+        <div style="margin-bottom:24px;">
+          <h1>Institutional Profile</h1>
+          <p style="color:var(--text-secondary);font-size:.9rem;">
+            Account credentials, verification ledger details, and academic assignments.
+          </p>
+        </div>
+
+        <!-- Verification Banner -->
+        <div id="verif-banner" class="alert" style="display:none;margin-bottom:20px;"></div>
+
+        <!-- Profile Header Card -->
+        <div class="card" style="margin-bottom:24px;">
+          <div class="card-body">
+            <div class="profile-header">
+              <div class="avatar" id="user-avatar">CF</div>
+              <div>
+                <h2 id="user-name" style="margin-bottom:4px;">User Name</h2>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <span id="user-role-badge"></span>
+                  <span id="user-verif-badge"></span>
+                </div>
+                <div style="font-size:.85rem;color:var(--text-secondary);margin-top:6px;" id="user-contact"></div>
+              </div>
+            </div>
+
+            <!-- Detail Grid -->
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="detail-label">University Roll Number</div>
+                <div class="detail-value" id="user-roll">Not Applicable</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Department</div>
+                <div class="detail-value" id="user-dept">—</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Program & Semester</div>
+                <div class="detail-value" id="user-academic">—</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Official Designation</div>
+                <div class="detail-value" id="user-designation">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Personal Verification Details Card (Visible only to account owner) -->
+        <div class="card" id="personal-card" style="margin-bottom:24px;">
+          <div class="card-header">
+            <span>Confidential Identity Records (Registration Ledger)</span>
+          </div>
+          <div class="card-body">
+            <p style="font-size:.82rem;color:var(--text-secondary);margin-bottom:16px;">
+              These records are collected solely for institutional roll-call verification and cross-referencing against university files.
+            </p>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="detail-label">Father's Name</div>
+                <div class="detail-value" id="user-father">—</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Mother's Name</div>
+                <div class="detail-value" id="user-mother">—</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Verification Remarks</div>
+                <div class="detail-value" id="user-verif-remarks">None on file</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Verification Timestamp</div>
+                <div class="detail-value" id="user-verif-time">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await Auth.requireAuth(['student', 'cr', 'faculty', 'admin']);
+      if (!user) return;
+
+      const isStudentRole = user.role === 'student' || user.role === 'cr';
+      if (isStudentRole) {
+        document.getElementById('sidebar-container').innerHTML = UI.buildStudentSidebar(user);
+      } else {
+        document.getElementById('sidebar-container').innerHTML = UI.buildAdminSidebar(user);
+      }
+      document.getElementById('topbar-container').innerHTML = UI.buildTopbar('My Profile');
+      UI.setupPage(user, 'profile');
+
+      // Populate User details
+      document.getElementById('user-avatar').textContent = user.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      document.getElementById('user-name').textContent = user.full_name;
+      document.getElementById('user-role-badge').innerHTML = `<span class="badge badge-info">${APP_CONSTANTS.ROLE_LABELS[user.role] || user.role}</span>`;
+      document.getElementById('user-verif-badge').innerHTML = UI.formatVerification(user.verification_status);
+      document.getElementById('user-contact').textContent = `${user.email} • ${user.mobile_number || 'No phone number'}`;
+
+      document.getElementById('user-roll').textContent = user.roll_number || 'Faculty/Admin (No Roll No)';
+      document.getElementById('user-dept').textContent = user.department_name ? `${user.department_name} (${user.department_code})` : 'Central Administration';
+      document.getElementById('user-academic').textContent = user.course ? `${user.course} (Sem ${user.semester || 1}, Sec ${user.section || 'A'})` : 'Institutional Staff';
+      document.getElementById('user-designation').textContent = user.designation || (user.role === 'cr' ? 'Class Representative' : 'Student');
+
+      // Confidential fields
+      if (user.father_name) document.getElementById('user-father').textContent = user.father_name;
+      if (user.mother_name) document.getElementById('user-mother').textContent = user.mother_name;
+      if (user.verification_remarks) document.getElementById('user-verif-remarks').textContent = user.verification_remarks;
+      if (user.verified_at) document.getElementById('user-verif-time').textContent = UI.formatDate(user.verified_at);
+
+      // Verification banner
+      const banner = document.getElementById('verif-banner');
+      if (user.verification_status === 'pending_verification') {
+        banner.className = 'alert alert-warning';
+        banner.innerHTML = `
+          <div><strong>⏳ Account Status: PENDING VERIFICATION</strong></div>
+          <div style="font-size:.85rem;margin-top:4px;">
+            Your registration is awaiting identity verification by the university administrator. Once verified, you will be able to digitally submit applications.
+          </div>
+        `;
+        banner.style.display = 'block';
+      } else if (user.verification_status === 'verified') {
+        banner.className = 'alert alert-success';
+        banner.innerHTML = `
+          <div><strong>✅ Account Status: VERIFIED</strong></div>
+          <div style="font-size:.85rem;margin-top:4px;">
+            Your identity has been verified against university academic ledgers. All digital application privileges are fully unlocked.
+          </div>
+        `;
+        banner.style.display = 'block';
+      } else if (user.verification_status === 'rejected') {
+        banner.className = 'alert alert-danger';
+        banner.innerHTML = `
+          <div><strong>❌ Account Status: VERIFICATION REJECTED</strong></div>
+          <div style="font-size:.85rem;margin-top:4px;">
+            Remarks: "${UI.escapeHtml(user.verification_remarks || 'Identity details could not be matched with registrar ledgers.')}".
+          </div>
+        `;
+        banner.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>

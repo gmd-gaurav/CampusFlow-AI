@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Application Tracking — CampusFlow AI</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <div class="app-layout">
+    <div id="sidebar-container"></div>
+
+    <div class="main-content">
+      <div id="topbar-container"></div>
+
+      <main class="page-content" style="max-width:1100px;">
+
+        <!-- Back Link & Action Bar -->
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+          <div>
+            <a href="/my-applications.html" class="btn btn-sm btn-outline">
+              ← Back to Applications
+            </a>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button type="button" class="btn btn-outline" id="btn-print">
+              🖨️ Print Application
+            </button>
+          </div>
+        </div>
+
+        <div id="loading-container">
+          <div class="spinner"></div>
+        </div>
+
+        <div id="app-content" style="display:none;">
+
+          <!-- STATUS BANNER (PROMINENT CHECKMARK / CROSS / CLOCK) -->
+          <div id="status-banner" class="status-large">
+            <div class="status-icon" id="status-icon"></div>
+            <div>
+              <div class="status-text" id="status-title"></div>
+              <div id="status-subtitle" style="font-size:.88rem;opacity:.9;margin-top:2px;"></div>
+            </div>
+          </div>
+
+          <!-- REVIEWER DECISION CARD (if reviewed) -->
+          <div id="review-card" class="card" style="display:none;margin-bottom:24px;border-left:5px solid var(--primary);">
+            <div class="card-header" style="background:#fafbfd;">
+              <span>Official Decision & Reviewer Remarks</span>
+              <span id="review-decision-badge"></span>
+            </div>
+            <div class="card-body">
+              <div style="margin-bottom:12px;">
+                <div style="font-size:.78rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;">Reviewing Authority</div>
+                <div style="font-size:1rem;font-weight:600;" id="reviewer-name"></div>
+                <div style="font-size:.82rem;color:var(--text-secondary);" id="review-date"></div>
+              </div>
+
+              <div>
+                <div style="font-size:.78rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;margin-bottom:4px;">Authority Remarks</div>
+                <div id="reviewer-remarks" style="background:#f8fafc;padding:14px;border-radius:var(--radius-sm);border:1px solid var(--border);font-size:.92rem;line-height:1.6;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MAIN APPLICATION CARD -->
+          <div class="card" style="margin-bottom:24px;">
+            <div class="card-header">
+              <div>
+                <span id="app-id-badge" class="badge badge-info" style="font-size:.85rem;"></span>
+                <span id="app-type-badge" style="margin-left:6px;"></span>
+              </div>
+              <span id="app-category-text" style="font-size:.85rem;color:var(--text-secondary);font-weight:500;"></span>
+            </div>
+
+            <div class="card-body">
+              <!-- Meta Info Grid -->
+              <div class="detail-grid" style="margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--border-light);">
+                <div class="detail-item">
+                  <div class="detail-label">Applicant</div>
+                  <div class="detail-value" id="meta-applicant"></div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Addressed To</div>
+                  <div class="detail-value" id="meta-recipient"></div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Academic Scope</div>
+                  <div class="detail-value" id="meta-academic"></div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Submission Date & Time</div>
+                  <div class="detail-value" id="meta-submitted"></div>
+                </div>
+              </div>
+
+              <!-- Subject & Body -->
+              <div style="margin-bottom:16px;">
+                <div style="font-size:.78rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;">Subject</div>
+                <div style="font-size:1.15rem;font-weight:700;color:var(--primary);margin-top:2px;" id="meta-subject"></div>
+              </div>
+
+              <div style="margin-bottom:24px;">
+                <div style="font-size:.78rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;margin-bottom:8px;">Original Application Text</div>
+                <div id="meta-body" style="background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm);padding:24px;white-space:pre-wrap;font-family:'Georgia', serif;line-height:1.8;font-size:.95rem;"></div>
+              </div>
+
+              <!-- Supporting Details -->
+              <div id="supporting-section" style="display:none;margin-bottom:20px;">
+                <div style="font-size:.78rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;">Supporting Details</div>
+                <div id="meta-supporting" style="font-size:.88rem;color:var(--text-secondary);margin-top:4px;"></div>
+              </div>
+
+              <!-- Attachments List -->
+              <div id="attachments-section" style="display:none;">
+                <div style="font-size:.78rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;margin-bottom:8px;">Uploaded Attachments</div>
+                <div id="attachments-list" style="display:flex;flex-wrap:wrap;gap:10px;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI ANALYSIS ACCORDION -->
+          <div class="card" style="margin-bottom:24px;border:1px solid #c5cae9;">
+            <div class="card-header" style="background:#e8eaf6;cursor:pointer;" id="toggle-ai-card">
+              <span style="color:var(--primary);font-weight:700;">🤖 Institutional AI Analysis & Extraction</span>
+              <span id="ai-toggle-icon">▼</span>
+            </div>
+            <div class="card-body" id="ai-body-content" style="background:#fafbfd;">
+              <div style="margin-bottom:14px;">
+                <div style="font-size:.78rem;text-transform:uppercase;color:var(--text-muted);font-weight:600;">Executive Summary</div>
+                <div id="ai-summary" style="font-size:.92rem;font-weight:500;margin-top:4px;color:#1e293b;"></div>
+              </div>
+
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <div class="detail-label">Main Request</div>
+                  <div class="detail-value" id="ai-main-request">—</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Relevant Dates / Duration</div>
+                  <div class="detail-value" id="ai-dates">—</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Tone & Clarity Check</div>
+                  <div class="detail-value" id="ai-tone">—</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Missing Information Flag</div>
+                  <div class="detail-value" id="ai-missing">—</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- IMMUTABLE AUDIT LOG & TIMELINE -->
+          <div class="card">
+            <div class="card-header">
+              <span>Application Audit History (Immutable Decision Log)</span>
+            </div>
+            <div class="card-body">
+              <div class="timeline" id="timeline-container">
+                <!-- Timeline items injected here -->
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Allow student, cr, faculty, and admin to view tracking
+      const user = await Auth.requireAuth(['student', 'cr', 'faculty', 'admin']);
+      if (!user) return;
+
+      const isStudentRole = user.role === 'student' || user.role === 'cr';
+      if (isStudentRole) {
+        document.getElementById('sidebar-container').innerHTML = UI.buildStudentSidebar(user);
+        UI.setupPage(user, 'my-applications');
+      } else {
+        document.getElementById('sidebar-container').innerHTML = UI.buildAdminSidebar(user);
+        UI.setupPage(user, 'incoming-applications');
+      }
+      document.getElementById('topbar-container').innerHTML = UI.buildTopbar('Application Tracking');
+
+      // Extract Application ID from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const appId = urlParams.get('id');
+
+      if (!appId) {
+        UI.showToast('No Application ID provided.', 'danger');
+        window.location.href = isStudentRole ? '/my-applications.html' : '/incoming-applications.html';
+        return;
+      }
+
+      // Load Application Details
+      try {
+        const res = await API.get(`/api/student/applications/${appId}`);
+        if (!res.success || !res.application) {
+          document.getElementById('loading-container').innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">❌</div>
+              <div class="empty-title">Application Not Found</div>
+              <div class="empty-desc">${UI.escapeHtml(res.error || 'The requested application could not be retrieved.')}</div>
+            </div>
+          `;
+          return;
+        }
+
+        const app = res.application;
+        document.getElementById('loading-container').style.display = 'none';
+        document.getElementById('app-content').style.display = 'block';
+
+        // 1. Prominent Status Banner
+        const banner = document.getElementById('status-banner');
+        const icon = document.getElementById('status-icon');
+        const title = document.getElementById('status-title');
+        const subtitle = document.getElementById('status-subtitle');
+
+        if (app.status === 'approved') {
+          banner.className = 'status-large approved';
+          icon.textContent = '✅';
+          title.textContent = 'APPLICATION APPROVED';
+          subtitle.textContent = `Approved by ${app.reviews?.[0]?.reviewer_name || 'Authority'} on ${UI.formatDate(app.reviews?.[0]?.reviewed_at)}.`;
+        } else if (app.status === 'rejected') {
+          banner.className = 'status-large rejected';
+          icon.textContent = '❌';
+          title.textContent = 'APPLICATION REJECTED';
+          subtitle.textContent = `Rejected by ${app.reviews?.[0]?.reviewer_name || 'Authority'}. Please review the mandatory remarks below.`;
+        } else if (app.status === 'pending_review' || app.status === 'submitted') {
+          banner.className = 'status-large pending';
+          icon.textContent = '⏳';
+          title.textContent = 'PENDING REVIEW';
+          subtitle.textContent = `Your petition has been delivered to ${app.recipient_designation || app.recipient_role.toUpperCase()} and is in the review queue.`;
+        } else {
+          banner.className = 'status-large draft';
+          icon.textContent = '📝';
+          title.textContent = 'DRAFT APPLICATION';
+          subtitle.textContent = 'This application has not been submitted yet.';
+        }
+
+        // 2. Review Decision Card (if reviewed)
+        if (app.reviews && app.reviews.length > 0) {
+          const rev = app.reviews[0];
+          document.getElementById('review-card').style.display = 'block';
+          document.getElementById('review-decision-badge').innerHTML = UI.formatStatus(rev.decision);
+          document.getElementById('reviewer-name').textContent = `${rev.reviewer_name} (${rev.reviewer_designation || 'Reviewer'})`;
+          document.getElementById('review-date').textContent = UI.formatDate(rev.reviewed_at);
+          document.getElementById('reviewer-remarks').textContent = rev.remarks;
+        }
+
+        // 3. Main Details
+        document.getElementById('app-id-badge').textContent = app.application_id;
+        document.getElementById('app-type-badge').innerHTML = app.application_type === 'collective'
+          ? `<span class="badge badge-collective">Collective Class (${app.students_represented_count || 64} Students)</span>`
+          : '<span class="badge badge-individual">Individual Student</span>';
+        document.getElementById('app-category-text').textContent = app.category;
+
+        document.getElementById('meta-applicant').textContent = `${app.applicant_name} (Roll: ${app.applicant_roll_number || 'N/A'})`;
+        document.getElementById('meta-recipient').textContent = `${app.recipient_designation || app.recipient_role.toUpperCase()}${app.recipient_name ? ` — ${app.recipient_name}` : ''}`;
+        document.getElementById('meta-academic').textContent = `${app.course || 'B.Tech'} ${app.department_name || ''} (Sem ${app.semester || '—'}, Sec ${app.section || '—'})`;
+        document.getElementById('meta-submitted').textContent = UI.formatDate(app.submitted_at || app.created_at);
+
+        document.getElementById('meta-subject').textContent = app.subject;
+        document.getElementById('meta-body').textContent = app.body;
+
+        if (app.supporting_details) {
+          document.getElementById('supporting-section').style.display = 'block';
+          document.getElementById('meta-supporting').textContent = app.supporting_details;
+        }
+
+        // Attachments
+        if (app.attachments && app.attachments.length > 0) {
+          document.getElementById('attachments-section').style.display = 'block';
+          document.getElementById('attachments-list').innerHTML = app.attachments.map(att => `
+            <a href="/uploads/${att.file_name}" target="_blank" class="btn btn-sm btn-outline" style="display:inline-flex;align-items:center;gap:6px;">
+              📄 ${UI.escapeHtml(att.original_name)} (${(att.file_size / 1024).toFixed(1)} KB)
+            </a>
+          `).join('');
+        }
+
+        // 4. AI Analysis
+        if (app.ai_summary) {
+          document.getElementById('ai-summary').textContent = app.ai_summary;
+        } else {
+          document.getElementById('ai-summary').textContent = 'Factual summary will appear once processed.';
+        }
+
+        if (app.ai_key_info) {
+          try {
+            const keyInfo = JSON.parse(app.ai_key_info);
+            document.getElementById('ai-main-request').textContent = keyInfo.main_request || '—';
+            document.getElementById('ai-dates').textContent = keyInfo.relevant_dates || '—';
+            document.getElementById('ai-missing').textContent = keyInfo.missing_information || 'None detected';
+          } catch (_) {}
+        }
+
+        if (app.ai_quality_check) {
+          try {
+            const qc = JSON.parse(app.ai_quality_check);
+            document.getElementById('ai-tone').textContent = `${qc.clarity || 'Good'} clarity • ${qc.tone || 'Formal'}`;
+          } catch (_) {}
+        }
+
+        // Toggle AI Accordion
+        const toggleAi = document.getElementById('toggle-ai-card');
+        const aiBody = document.getElementById('ai-body-content');
+        const aiIcon = document.getElementById('ai-toggle-icon');
+        toggleAi.addEventListener('click', () => {
+          const isOpen = aiBody.style.display !== 'none';
+          aiBody.style.display = isOpen ? 'none' : 'block';
+          aiIcon.textContent = isOpen ? '▶' : '▼';
+        });
+
+        // 5. Timeline / Audit History
+        const timeline = document.getElementById('timeline-container');
+        if (app.history && app.history.length > 0) {
+          timeline.innerHTML = app.history.map(item => {
+            let dotColor = 'blue';
+            if (item.action === 'reviewed') {
+              dotColor = item.details.includes('APPROVED') ? 'green' : 'red';
+            } else if (item.action === 'draft_saved') {
+              dotColor = 'grey';
+            }
+
+            return `
+              <div class="timeline-item">
+                <div class="timeline-dot ${dotColor}"></div>
+                <div class="timeline-content">
+                  <div class="timeline-title">${UI.escapeHtml(item.details)}</div>
+                  <div class="timeline-meta">
+                    Actor: <strong>${UI.escapeHtml(item.actor_name)}</strong> (${UI.escapeHtml(item.actor_role)}) • ${UI.formatDate(item.created_at)}
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+
+        // Print handler
+        document.getElementById('btn-print').addEventListener('click', () => window.print());
+
+      } catch (err) {
+        console.error('Error loading application details', err);
+      }
+    });
+  </script>
+</body>
+</html>
