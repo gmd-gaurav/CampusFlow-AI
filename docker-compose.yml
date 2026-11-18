@@ -1,0 +1,22 @@
+services:
+  campusflow-ai:
+    build: .
+    container_name: campusflow-app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - DATABASE_PATH=/app/data/campusflow.db
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
+      - SESSION_DURATION_DAYS=7
+    volumes:
+      # Persistent storage for SQLite database and uploaded attachments
+      - campusflow_data:/app/data
+      - campusflow_uploads:/app/uploads
+
+volumes:
+  campusflow_data:
+  campusflow_uploads:
