@@ -1,30 +1,36 @@
+
 # Production Dockerfile for CampusFlow AI
 FROM node:24-alpine
 
-# Set working directory
+# Application directory
 WORKDIR /app
 
-# Set production environment
+# Production environment
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV DATABASE_PATH=/app/data/campusflow.db
 
-# Install dependencies
+# Install native build dependencies for better-sqlite3
+RUN apk add --no-cache python3 make g++
+
+# Copy dependency manifests
 COPY package*.json ./
-RUN npm ci --only=production
+
+# Install production dependencies
+RUN npm ci --omit=dev
 
 # Copy application source
 COPY . .
 
-# Create volume directories for SQLite DB and file uploads
+# Create persistent storage directories
 RUN mkdir -p /app/data /app/uploads
 
-# Expose HTTP port
+# Application port
 EXPOSE 3000
 
-# Healthcheck
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+# Container health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/auth/departments || exit 1
 
-# Start server
-CMD ["node", "server.js"]
+# Start application
+CMD ["npm", "start"]
