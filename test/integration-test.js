@@ -13,6 +13,9 @@ const applicationService = require('../src/services/application-service');
 
 test('CampusFlow AI Comprehensive Integration & Quality Test', async (t) => {
   seedDatabase();
+  // Ensure idempotent state for regression tests
+  run("UPDATE users SET verification_status = 'pending_verification' WHERE email = 'priya.cse@campusflow.edu'");
+  run("UPDATE applications SET status = 'pending_review' WHERE application_id = 'CFA-2026-000002'");
 
   await t.test('1. Database initialized and seeded with departments and classes', () => {
     const depts = query('SELECT * FROM departments');
@@ -115,6 +118,7 @@ test('CampusFlow AI Comprehensive Integration & Quality Test', async (t) => {
   });
 
   await t.test('5. Unverified student blocked from submitting applications', async () => {
+    run("UPDATE users SET verification_status = 'pending_verification' WHERE email = 'priya.cse@campusflow.edu'");
     const { verifiedStudentOnly } = require('../src/middleware/auth');
     const priya = get('SELECT * FROM users WHERE email = ?', ['priya.cse@campusflow.edu']);
 
@@ -210,6 +214,16 @@ test('CampusFlow AI Comprehensive Integration & Quality Test', async (t) => {
     const qualityResult = await aiService.checkQuality(genResult.body);
     assert.ok(qualityResult.clarity, 'Must assess clarity');
     assert.ok(qualityResult.tone, 'Must assess tone');
+
+    // Test Anti-Echo / Semantic Rewrite Enhancement
+    const rewritten = await aiService.generateApplication({
+      prompt: 'fever and headache need 2 days leave',
+      category: 'Leave Application',
+      recipientRole: 'coordinator',
+      applicantName: 'Test Student'
+    });
+    assert.strictEqual(rewritten.body.includes('fever and headache need 2 days leave'), false, 'AI must transform casual terms into formal prose rather than copying verbatim');
+    assert.ok(rewritten.body.includes('acute medical indisposition'), 'Must elevate colloquial terms to formal academic language');
   });
 
   await t.test('8. Hierarchy Validation: Student vs CR vs Coordinator', () => {

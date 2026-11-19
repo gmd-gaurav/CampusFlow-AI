@@ -28,6 +28,9 @@
             <a href="/incoming-applications.html" class="btn btn-primary">
               📥 View Incoming Queue
             </a>
+            <button type="button" id="btn-create-faculty" class="btn btn-outline" style="display:none;">
+              ➕ Assign Authority Role
+            </button>
             <a href="/verify-students.html" id="btn-verify-nav" class="btn btn-outline" style="display:none;">
               👥 Verify Registrations
             </a>
@@ -138,6 +141,90 @@
           </div>
         </div>
 
+        <!-- Authority Role Assignment Modal -->
+        <div class="modal-overlay" id="faculty-modal">
+          <div class="modal modal-lg">
+            <div class="modal-header">
+              <span>Register Institutional Authority / Faculty Role</span>
+              <button class="modal-close" id="faculty-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+              <form id="create-faculty-form">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="fac-name">Full Name <span class="required">*</span></label>
+                    <input type="text" id="fac-name" class="form-control" placeholder="e.g. Dr. Ramesh Kumar" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="fac-email">Institutional Email <span class="required">*</span></label>
+                    <input type="email" id="fac-email" class="form-control" placeholder="e.g. ramesh.kumar@campusflow.edu" required>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="fac-mobile">Mobile Number</label>
+                    <input type="tel" id="fac-mobile" class="form-control" placeholder="+91 9876543210">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="fac-password">Initial Password <span class="required">*</span></label>
+                    <input type="password" id="fac-password" class="form-control" value="Faculty@123" required>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="fac-designation">Designation <span class="required">*</span></label>
+                    <select id="fac-designation" class="form-control" required>
+                      <option value="Class Coordinator">Class Coordinator</option>
+                      <option value="HOD">Head of Department (HOD)</option>
+                      <option value="Director">Director of Institution</option>
+                      <option value="Dean">Dean of Academic Affairs</option>
+                      <option value="Professor">Professor / Reviewer</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="fac-dept">Assigned Department</label>
+                    <select id="fac-dept" class="form-control">
+                      <option value="">Select Department (if applicable)...</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Coordinator specific assignment -->
+                <div id="coord-assignment-fields" class="form-row" style="background:#f1f5f9;padding:12px;border-radius:var(--radius-sm);margin-bottom:14px;">
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="fac-sem">Assigned Semester</label>
+                    <select id="fac-sem" class="form-control">
+                      <option value="1">Semester 1</option>
+                      <option value="2">Semester 2</option>
+                      <option value="3">Semester 3</option>
+                      <option value="4" selected>Semester 4</option>
+                      <option value="5">Semester 5</option>
+                      <option value="6">Semester 6</option>
+                      <option value="7">Semester 7</option>
+                      <option value="8">Semester 8</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="fac-sec">Assigned Section</label>
+                    <select id="fac-sec" class="form-control">
+                      <option value="A" selected>Section A</option>
+                      <option value="B">Section B</option>
+                      <option value="C">Section C</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;">
+                  <button type="button" class="btn btn-outline" id="fac-cancel">Cancel</button>
+                  <button type="submit" class="btn btn-primary" id="btn-save-faculty">Register & Assign Role</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
       </main>
     </div>
   </div>
@@ -159,10 +246,78 @@
       document.getElementById('scope-description').textContent =
         `Authority: ${desig} • Assigned Department: ${user.department_name || 'All Institutional Units'}`;
 
-      // 3. Admin Overview (if admin)
+      // 3. Admin Overview & Faculty Registration (if admin)
       if (user.role === 'admin') {
         document.getElementById('btn-verify-nav').style.display = 'inline-flex';
+        document.getElementById('btn-create-faculty').style.display = 'inline-flex';
         document.getElementById('admin-overview-card').style.display = 'block';
+
+        // Load departments into faculty modal
+        const facDeptSelect = document.getElementById('fac-dept');
+        API.get('/api/auth/departments').then(res => {
+          if (res.success && res.departments) {
+            res.departments.forEach(d => {
+              const opt = document.createElement('option');
+              opt.value = d.id;
+              opt.textContent = `${d.name} (${d.code})`;
+              facDeptSelect.appendChild(opt);
+            });
+          }
+        });
+
+        // Faculty Modal Controls
+        const facModal = document.getElementById('faculty-modal');
+        document.getElementById('btn-create-faculty').addEventListener('click', () => facModal.classList.add('show'));
+        document.getElementById('faculty-modal-close').addEventListener('click', () => facModal.classList.remove('show'));
+        document.getElementById('fac-cancel').addEventListener('click', () => facModal.classList.remove('show'));
+
+        const facDesig = document.getElementById('fac-designation');
+        const coordFields = document.getElementById('coord-assignment-fields');
+        facDesig.addEventListener('change', () => {
+          coordFields.style.display = facDesig.value === 'Class Coordinator' ? 'grid' : 'none';
+        });
+
+        document.getElementById('create-faculty-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const saveBtn = document.getElementById('btn-save-faculty');
+          saveBtn.disabled = true;
+          saveBtn.textContent = 'Registering...';
+
+          let roleType = 'other';
+          if (facDesig.value === 'Class Coordinator') roleType = 'coordinator';
+          else if (facDesig.value === 'HOD') roleType = 'hod';
+          else if (facDesig.value === 'Director') roleType = 'director';
+          else if (facDesig.value === 'Dean') roleType = 'dean';
+
+          const payload = {
+            fullName: document.getElementById('fac-name').value.trim(),
+            email: document.getElementById('fac-email').value.trim(),
+            mobileNumber: document.getElementById('fac-mobile').value.trim(),
+            password: document.getElementById('fac-password').value,
+            designation: facDesig.value,
+            departmentId: facDeptSelect.value || null,
+            roleType,
+            course: 'B.Tech',
+            semester: roleType === 'coordinator' ? document.getElementById('fac-sem').value : null,
+            section: roleType === 'coordinator' ? document.getElementById('fac-sec').value : null
+          };
+
+          try {
+            const fRes = await API.post('/api/admin/faculty', payload);
+            if (fRes.success) {
+              UI.showToast('Authority role assigned and registered successfully!', 'success');
+              facModal.classList.remove('show');
+              document.getElementById('create-faculty-form').reset();
+            } else {
+              UI.showToast(fRes.error || 'Failed to register authority.', 'danger');
+            }
+          } catch (err) {
+            UI.showToast('Network error while registering authority.', 'danger');
+          } finally {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Register & Assign Role';
+          }
+        });
 
         try {
           const ovRes = await API.get('/api/admin/overview');

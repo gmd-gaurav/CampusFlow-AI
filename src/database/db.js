@@ -25,12 +25,29 @@ function initSchema() {
 
 initSchema();
 
-// Helper database wrapper methods
+// High-Performance LRU Statement Cache (Eliminates repeated SQL AST parsing)
+const statementCache = new Map();
+const MAX_CACHED_STATEMENTS = 100;
+
+function getCachedStatement(sql) {
+  let stmt = statementCache.get(sql);
+  if (!stmt) {
+    if (statementCache.size >= MAX_CACHED_STATEMENTS) {
+      // Evict oldest statement
+      const firstKey = statementCache.keys().next().value;
+      statementCache.delete(firstKey);
+    }
+    stmt = db.prepare(sql);
+    statementCache.set(sql, stmt);
+  }
+  return stmt;
+}
+
+// Helper database wrapper methods with statement caching
 function query(sql, params = []) {
   try {
-    const stmt = db.prepare(sql);
+    const stmt = getCachedStatement(sql);
     const rows = stmt.all(...params);
-    // Convert null-prototype objects to clean JS plain objects
     return rows.map(row => ({ ...row }));
   } catch (error) {
     console.error('Database query error:', error, 'SQL:', sql, 'Params:', params);
@@ -40,7 +57,7 @@ function query(sql, params = []) {
 
 function get(sql, params = []) {
   try {
-    const stmt = db.prepare(sql);
+    const stmt = getCachedStatement(sql);
     const row = stmt.get(...params);
     return row ? { ...row } : null;
   } catch (error) {
@@ -51,7 +68,7 @@ function get(sql, params = []) {
 
 function run(sql, params = []) {
   try {
-    const stmt = db.prepare(sql);
+    const stmt = getCachedStatement(sql);
     return stmt.run(...params);
   } catch (error) {
     console.error('Database run error:', error, 'SQL:', sql, 'Params:', params);

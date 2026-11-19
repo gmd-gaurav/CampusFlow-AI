@@ -46,8 +46,8 @@ async function register(req, res) {
       return res.status(400).json({ success: false, error: 'An account with this University Roll Number already exists.' });
     }
 
-    // Hash password
-    const passwordHash = bcrypt.hashSync(password, 10);
+    // Hash password asynchronously (non-blocking for high concurrency)
+    const passwordHash = await bcrypt.hash(password, 10);
 
     // Find class_id if possible
     let classId = null;
@@ -138,7 +138,7 @@ async function login(req, res) {
       return res.status(403).json({ success: false, error: 'This account has been deactivated. Please contact campus administration.' });
     }
 
-    const isMatch = bcrypt.compareSync(password, user.password_hash);
+    const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
       return res.status(401).json({ success: false, error: 'Invalid email or password.' });
     }

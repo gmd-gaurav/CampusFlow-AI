@@ -60,7 +60,7 @@ router.get('/faculty', (req, res) => {
 });
 
 // Create new faculty account
-router.post('/faculty', (req, res) => {
+router.post('/faculty', async (req, res) => {
   try {
     const {
       fullName,
@@ -84,7 +84,7 @@ router.post('/faculty', (req, res) => {
       return res.status(400).json({ success: false, error: 'An account with this email already exists.' });
     }
 
-    const passwordHash = bcrypt.hashSync(password, 10);
+    const passwordHash = await bcrypt.hash(password, 10);
 
     const facultyId = transaction(() => {
       const uRes = run(
