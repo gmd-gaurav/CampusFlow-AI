@@ -42,12 +42,14 @@ CampusFlow AI is engineered as **one unified application with role-based access 
    - Split-screen review interface: original petition on the left, AI factual summary + key info extraction on the right.
    - Authoritative human approval/rejection with mandatory rejection remarks.
    - Student Verification Ledger for administrators to inspect registrations and verify against campus admission books.
-
+   - Admin now can also add/remove authorities like HOD's of Differnet Years and Branches and Also Other Expects of it.
 ---
 
 ## 🗄️ Database Architecture: SQLite Only
 
 The database is built on **pure SQLite** (using Node.js native `node:sqlite`), requiring zero external database daemon configuration, with strict foreign key constraints (`PRAGMA foreign_keys = ON;`) and WAL journal mode.
+
+Now V2 Have a very exceptional high security and Effeciency and it is now have good code quality then earlier
 
 ### Relational Schema
 
@@ -172,25 +174,7 @@ node src/database/seed.js
 ```bash
 npm start
 ```
-Open your browser at: **`http://localhost:3000`**
 
----
-
-## 👥 Demo User Accounts (Pre-Seeded for Instant Testing)
-
-All accounts are pre-seeded in the database. You can use the **1-Click Demo Buttons** on the sign-in page (`/login.html`) to populate credentials instantly:
-
-| Role | Name & Title | Email | Password | Scope & Purpose |
-|---|---|---|---|---|
-| **Admin** | Dr. Rajesh Sharma | `admin@campusflow.edu` | `Admin@123` | Institutional verification, user audits & overview |
-| **Director** | Prof. Arvind N. Swaminathan | `director@campusflow.edu` | `Director@123` | Campus infrastructure petitions & appeals |
-| **HOD** | Dr. Sunita Kulkarni | `hod.cse@campusflow.edu` | `Hod@123` | CSE Department applications & exam permissions |
-| **Coordinator** | Prof. Manoj Deshmukh | `coordinator.cse4a@campusflow.edu` | `Coord@123` | B.Tech CSE Sem 4 Sec A leaves & attendance |
-| **Student** | Rahul Sharma | `rahul.cse@campusflow.edu` | `Student@123` | Verified student (Roll: `22CSE012`) |
-| **CR** | Aakash Verma | `cr.cse4a@campusflow.edu` | `Cr@123` | Class Representative with collective petition mode |
-| **Pending** | Priya Verma | `priya.cse@campusflow.edu` | `Student@123` | Unverified student (for testing verification flow) |
-
----
 
 ## 🧪 Comprehensive Integration Test Suite
 
