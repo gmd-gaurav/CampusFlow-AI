@@ -1,28 +1,27 @@
 const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
-const { securityHeaders, rateLimiter } = require('./middleware/security');
+const compression = require('compression');
+const { securityHeaders, rateLimiter, deepSanitize } = require('./middleware/security');
 
 const app = express();
+
+// High-Performance Gzip / Deflate Compression
+app.use(compression({
+  threshold: 1024, // only compress responses > 1KB
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) return false;
+    return compression.filter(req, res);
+  }
+}));
 
 // Security Headers (OWASP)
 app.use(securityHeaders);
 
-// Automated Recursive Input Sanitizer (Zero Developer Maintenance)
+// Automated Recursive Input Sanitizer (Prevents XSS & Prototype Pollution)
 app.use((req, res, next) => {
-  function sanitizeDeep(obj) {
-    if (!obj || typeof obj !== 'object') return obj;
-    for (const key of Object.keys(obj)) {
-      if (typeof obj[key] === 'string') {
-        obj[key] = obj[key].replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-      } else if (typeof obj[key] === 'object') {
-        sanitizeDeep(obj[key]);
-      }
-    }
-    return obj;
-  }
-  if (req.body) sanitizeDeep(req.body);
-  if (req.query) sanitizeDeep(req.query);
+  if (req.body) deepSanitize(req.body);
+  if (req.query) deepSanitize(req.query);
   next();
 });
 

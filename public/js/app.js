@@ -171,12 +171,16 @@
       if (!container) {
         container = document.createElement('div');
         container.className = 'toast-container';
+        container.setAttribute('aria-live', 'polite');
+        container.setAttribute('aria-atomic', 'true');
+        container.setAttribute('role', 'status');
         document.body.appendChild(container);
       }
       const toast = document.createElement('div');
       toast.className = `toast toast-${type}`;
+      toast.setAttribute('role', 'alert');
       const icons = { success: '✅', danger: '❌', warning: '⚠️', info: 'ℹ️' };
-      toast.innerHTML = `<span>${icons[type] || ''}</span> <span>${UI.escapeHtml(message)}</span>`;
+      toast.innerHTML = `<span aria-hidden="true">${icons[type] || ''}</span> <span>${UI.escapeHtml(message)}</span>`;
       container.appendChild(toast);
       setTimeout(() => {
         toast.style.animation = 'slideOut .3s forwards';
@@ -190,9 +194,12 @@
         overlay = document.createElement('div');
         overlay.id = 'app-modal-overlay';
         overlay.className = 'modal-overlay';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-labelledby', 'modal-title');
         overlay.innerHTML = `
           <div class="modal">
-            <div class="modal-header"><span id="modal-title"></span><button class="modal-close" id="modal-close-btn">&times;</button></div>
+            <div class="modal-header"><span id="modal-title"></span><button class="modal-close" id="modal-close-btn" aria-label="Close dialog">&times;</button></div>
             <div class="modal-body" id="modal-body"></div>
             <div class="modal-footer">
               <button class="btn btn-outline" id="modal-cancel-btn"></button>
@@ -200,6 +207,11 @@
             </div>
           </div>`;
         document.body.appendChild(overlay);
+
+        // Accessible Escape key to close modal
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') UI.hideModal();
+        });
       }
       document.getElementById('modal-title').textContent = title;
       document.getElementById('modal-body').innerHTML = body;
@@ -276,12 +288,24 @@
       const toggle = document.querySelector('.sidebar-toggle');
       const sidebar = document.querySelector('.sidebar');
       if (toggle && sidebar) {
-        toggle.addEventListener('click', () => sidebar.classList.toggle('open'));
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.addEventListener('click', () => {
+          const isOpen = sidebar.classList.toggle('open');
+          toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
         // Close on outside click on mobile
         document.addEventListener('click', (e) => {
           if (window.innerWidth <= 768 && sidebar.classList.contains('open') &&
               !sidebar.contains(e.target) && !toggle.contains(e.target)) {
             sidebar.classList.remove('open');
+            toggle.setAttribute('aria-expanded', 'false');
+          }
+        });
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+            sidebar.classList.remove('open');
+            toggle.setAttribute('aria-expanded', 'false');
           }
         });
       }

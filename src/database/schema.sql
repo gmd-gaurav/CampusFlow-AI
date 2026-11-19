@@ -165,3 +165,6 @@ CREATE INDEX IF NOT EXISTS idx_applications_dept ON applications(department_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read);
 CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
 CREATE INDEX IF NOT EXISTS idx_faculty_assignments_faculty ON faculty_assignments(faculty_id);
+CREATE INDEX IF NOT EXISTS idx_applications_applicant_status ON applications(applicant_id, status);
+CREATE INDEX IF NOT EXISTS idx_applications_dept_sem_sec ON applications(department_id, semester, section);
+CREATE INDEX IF NOT EXISTS idx_users_role_dept ON users(role, department_id);

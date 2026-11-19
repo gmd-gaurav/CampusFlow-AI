@@ -45,22 +45,29 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000);
 
-// Production HTTP Security Headers (OWASP recommendations)
-function securityHeaders(req, res, next) {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
-  // Content Security Policy for academic portal
-  res.setHeader(
-    'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self';"
-  );
-  next();
+// Automated Recursive Input Sanitizer (Prevents XSS & Prototype Pollution)
+function deepSanitize(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  for (const key of Object.keys(obj)) {
+    // Defense against Prototype Pollution
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+      delete obj[key];
+      continue;
+    }
+    if (typeof obj[key] === 'string') {
+      // Strip dangerous executable script tags and inline event handlers
+      obj[key] = obj[key]
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+        .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
+        .trim();
+    } else if (typeof obj[key] === 'object') {
+      deepSanitize(obj[key]);
+    }
+  }
+  return obj;
 }
 
-// Input Validator & Sanitizer
+// Input Validator & Sanitizer Helpers
 function sanitizeString(str, maxLength = 2000) {
   if (typeof str !== 'string') return '';
   return str
@@ -71,19 +78,39 @@ function sanitizeString(str, maxLength = 2000) {
 
 function isValidEmail(email) {
   if (!email || typeof email !== 'string') return false;
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   return emailRegex.test(email.trim());
 }
 
 function isValidRollNumber(roll) {
   if (!roll || typeof roll !== 'string') return false;
-  // University roll numbers are typically 4-20 alphanumeric characters
-  return /^[A-Za-z0-9\-_]{4,20}$/.test(roll.trim());
+  return /^[A-Za-z0-9\-_]{3,25}$/.test(roll.trim());
+}
+
+// Production HTTP Security Headers (OWASP & PCI-DSS standards)
+function securityHeaders(req, res, next) {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  }
+
+  // Robust Academic Portal Content Security Policy
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self';"
+  );
+  next();
 }
 
 module.exports = {
   rateLimiter,
   securityHeaders,
+  deepSanitize,
   sanitizeString,
   isValidEmail,
   isValidRollNumber
